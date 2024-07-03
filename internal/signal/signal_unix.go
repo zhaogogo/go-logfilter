@@ -1,7 +1,6 @@
 package signal
 
 import (
-	"fmt"
 	"k8s.io/klog/v2"
 	"os"
 	"os/signal"
@@ -14,10 +13,8 @@ func ListenSignal(termFunc func(), reloadFunc func(), cpuProfileFunc func(), mem
 
 	for sig := range c {
 		klog.Infof("capture signal: %v", sig)
-		fmt.Println(sig)
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM:
-
 			termFunc()
 		case syscall.SIGHUP:
 			reloadFunc()

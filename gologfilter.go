@@ -93,15 +93,9 @@ func main() {
 			http.ListenAndServe(appOpts.pprofAddr, nil)
 		}()
 	}
-	i := 1
-	for {
-		_ = make([]byte, 1<<i)
-		time.Sleep(time.Millisecond * 200)
-	}
-
 	go signal.ListenSignal(exit, reload, CPUProfile, MemProfile)
+
 	<-ctx.Done()
-	klog.Infof("stop")
 }
 
 func exit() {
@@ -122,13 +116,14 @@ func CPUProfile() {
 }
 
 func cpuProfileStart() {
+	klog.Infof("开始收集CPU信息cpu.%v profile文件", pid)
 	binPath, err := os.Executable()
 	if err != nil {
 		klog.Infof("创建CPU profile, 获取进程执行路径失败: %s", err)
 		return
 	}
 	binDir := path.Dir(binPath)
-	cpufd, err := os.Create(path.Join(binDir, appOpts.cpuprofile))
+	cpufd, err = os.Create(path.Join(binDir, appOpts.cpuprofile))
 	if err != nil {
 		klog.Infof("could not create CPU profile: %s", err)
 		return
@@ -140,8 +135,10 @@ func cpuProfileStart() {
 }
 
 func cpuProfileStop() {
+	klog.Infof("结束收集CPU信息mem.%v profile文件", pid)
 	if cpufd == nil {
-		klog.Fatalf("could not close CPU profile file FD: FD is nill")
+		klog.Warning("could not close CPU profile file FD: FD is nill, 可能已经手动停止")
+		return
 	}
 	pprof.StopCPUProfile()
 	if err := cpufd.Close(); err != nil {
@@ -163,6 +160,7 @@ func MemProfile() {
 }
 
 func memProfileStart() {
+	klog.Infof("开始收集内存信息mem.%v profile文件", pid)
 	binPath, err := os.Executable()
 	if err != nil {
 		klog.Infof("创建MEM profile, 获取进程执行路径失败: %s", err)
@@ -186,8 +184,10 @@ func memProfileStart() {
 }
 
 func memProfileStop() {
+	klog.Infof("结束收集内存信息mem.%v profile文件", pid)
 	if memfd == nil {
-		klog.Fatalf("could not close memory profile file FD: FD is nill")
+		klog.Warning("could not close memory profile file FD: FD is nill, 可能已经手动停止")
+		return
 	}
 	if err := memfd.Close(); err != nil {
 		klog.Fatalf("could not close memory profile file FD: %s", err)
