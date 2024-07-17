@@ -1,0 +1,7 @@
+input:
+  - Stdin:
+      codec: json
+
+fileters:
+  - Date2
+  - Test2
