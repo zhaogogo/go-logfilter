@@ -1,0 +1,9 @@
+inputs:
+  - stdin:
+      codec: json
+      prometheus_counter:
+        namespace: "xx"
+        subsystem: ""
+        name: "xn"
+      add_fields:
+        "[x1][x2]": 123

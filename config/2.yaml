@@ -1,7 +1,8 @@
-input:
-  - Stdin:
+inputs:
+  - Stdin2-1:
       codec: json
-
-fileters:
+  - Stdin2-2:
+      codec: json
+filters:
   - Date2
   - Date3

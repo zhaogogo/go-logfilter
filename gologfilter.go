@@ -5,7 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/zhaogogo/go-logfilter/inputs"
+	"github.com/zhaogogo/go-logfilter/internal/config"
+	"github.com/zhaogogo/go-logfilter/internal/config/file"
 	"github.com/zhaogogo/go-logfilter/internal/signal"
+	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 	"net/http"
 	_ "net/http/pprof"
@@ -70,6 +74,7 @@ func reload() {
 }
 
 func main() {
+	flag.Parse()
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 	if appOpts.version {
@@ -94,7 +99,19 @@ func main() {
 		}()
 	}
 	go signal.ListenSignal(exit, reload, CPUProfile, MemProfile)
-
+	conf, err := config.ParseConfig(
+		file.NewSource(appOpts.config),
+	)
+	if err != nil {
+		klog.Fatalf("加载配置文件失败", err)
+	}
+	confy, _ := yaml.Marshal(conf)
+	klog.Infof("合并后配置文件为:\n%s", confy)
+	inputs, err := inputs.NewInputs(conf)
+	if err != nil {
+		klog.Fatalf("构建inputs插件失败, err=%v", err)
+	}
+	go inputs.Start()
 	<-ctx.Done()
 }
 
