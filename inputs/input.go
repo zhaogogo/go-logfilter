@@ -47,6 +47,6 @@ type Inputs struct {
 
 func (i *Inputs) Start() {
 	for _, input := range i.inputCell {
-		input.Start()
+		go input.Start()
 	}
 }

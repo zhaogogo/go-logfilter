@@ -25,8 +25,7 @@ func NewPrometheusCounter(config map[string]interface{}) (prometheus.Counter, er
 		var opts prometheus.CounterOpts = prometheus.CounterOpts{}
 		err := mapstructure.Decode(promConf, &opts)
 		if err != nil {
-			err = errors.Wrapf(err, "prometheus配置解析失败 prometheus_conf=%v", promConf)
-			return nil, err
+			return nil, errors.Wrap(err, "prometheusOpts配置解析失败")
 		}
 
 		key := hashValue(opts)

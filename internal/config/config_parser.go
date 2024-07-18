@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/pkg/errors"
 	"github.com/zhaogogo/go-logfilter/encoding"
+	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 )
 
@@ -31,6 +32,8 @@ func ParseConfig(source Source) (map[string][]interface{}, error) {
 		}
 		conf = MergeConfig(conf, c)
 	}
+	confy, _ := yaml.Marshal(conf)
+	klog.Infof("合并后配置文件为:\n%s", confy)
 	return conf, nil
 }
 

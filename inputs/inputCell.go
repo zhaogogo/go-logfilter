@@ -9,7 +9,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func NewInputCell(input Input, cellConfig map[string]interface{}) *InputCell {
+func NewInputCell(input Input, cellConfig map[string]interface{}) (*InputCell, error) {
 	i := &InputCell{
 		input:        input,
 		config:       cellConfig,

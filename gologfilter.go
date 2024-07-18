@@ -9,7 +9,6 @@ import (
 	"github.com/zhaogogo/go-logfilter/internal/config"
 	"github.com/zhaogogo/go-logfilter/internal/config/file"
 	"github.com/zhaogogo/go-logfilter/internal/signal"
-	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 	"net/http"
 	_ "net/http/pprof"
@@ -105,8 +104,7 @@ func main() {
 	if err != nil {
 		klog.Fatalf("加载配置文件失败", err)
 	}
-	confy, _ := yaml.Marshal(conf)
-	klog.Infof("合并后配置文件为:\n%s", confy)
+
 	inputs, err := inputs.NewInputs(conf)
 	if err != nil {
 		klog.Fatalf("构建inputs插件失败, err=%v", err)
