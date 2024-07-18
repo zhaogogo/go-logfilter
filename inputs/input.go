@@ -3,19 +3,22 @@ package inputs
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/zhaogogo/go-logfilter/internal/config"
 	"k8s.io/klog/v2"
+	"sync"
 )
 
 const INPUTS = "inputs"
 
 type Input interface {
-	ReadOneEvent() map[string]interface{}
+	ReadEvent() chan map[string]interface{}
 	Shutdown()
 }
 
-func NewInputs(config map[string][]interface{}) (inputs *Inputs, err error) {
+func NewInputs(appconfig config.AppConfig, config map[string][]interface{}) (inputs *Inputs, err error) {
 	inputs = &Inputs{
-		config: config,
+		appConfig: appconfig,
+		config:    config,
 	}
 	for inputIdx, inputC := range config[INPUTS] {
 		var inputPlugin Input
@@ -29,10 +32,9 @@ func NewInputs(config map[string][]interface{}) (inputs *Inputs, err error) {
 				err = fmt.Errorf("input插件不可用, input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
 				return
 			}
-			inputCell := NewInputCell(inputPlugin, inputConfig)
-			if inputCell == nil {
-				err = errors.New(fmt.Sprintf("inputCell创建失败input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI))
-				return
+			inputCell, err := NewInputCell(inputPlugin, inputConfig)
+			if err != nil {
+				return nil, errors.Wrapf(err, "inputCell创建失败input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
 			}
 			inputs.inputCell = append(inputs.inputCell, inputCell)
 		}
@@ -41,12 +43,23 @@ func NewInputs(config map[string][]interface{}) (inputs *Inputs, err error) {
 }
 
 type Inputs struct {
+	appConfig config.AppConfig
 	config    map[string][]interface{}
 	inputCell []*InputCell
 }
 
 func (i *Inputs) Start() {
+	var wg sync.WaitGroup
 	for _, input := range i.inputCell {
-		go input.Start()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			input.Start(i.appConfig.Worker)
+		}()
 	}
+	wg.Wait()
+}
+
+func (i *Inputs) Stop() {
+
 }

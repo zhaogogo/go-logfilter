@@ -2,21 +2,22 @@ package inputs
 
 import (
 	"bufio"
-	"github.com/zhaogogo/go-logfilter/encoding"
+	"github.com/zhaogogo/go-logfilter/textcodec"
 	"os"
+	"sync"
 	"time"
 
 	"k8s.io/klog/v2"
 )
 
 type StdinInput struct {
+	one     sync.Once
 	config  map[string]interface{}
-	decoder encoding.Codec
+	decoder textcodec.Decoder
 
-	scanner  *bufio.Scanner
-	messages chan []byte
-
-	stop bool
+	scanner *bufio.Scanner
+	fifo    chan map[string]interface{}
+	stop    chan struct{}
 }
 
 func init() {
@@ -24,46 +25,54 @@ func init() {
 }
 
 func newStdinInput(config map[string]interface{}) Input {
-	var codertype string = "json"
+	var codertype string = "plain"
 	if v, ok := config["codec"]; ok {
 		codertype = v.(string)
 	}
-	decoder, ok := encoding.GetCodec(codertype)
-	if !ok {
-		klog.Fatalf("decoder类型不支持")
-	}
 	p := &StdinInput{
 
-		config:   config,
-		decoder:  decoder,
-		scanner:  bufio.NewScanner(os.Stdin),
-		messages: make(chan []byte, 10),
+		config:  config,
+		decoder: textcodec.NewDecoder(codertype),
+		scanner: bufio.NewScanner(os.Stdin),
+		fifo:    make(chan map[string]interface{}, 1),
+		stop:    make(chan struct{}),
 	}
 
 	return p
 }
 
-func (p *StdinInput) ReadOneEvent() map[string]interface{} {
-	if p.scanner.Scan() {
-		t := p.scanner.Bytes()
-		msg := make([]byte, len(t))
-		copy(msg, t)
-		event := make(map[string]interface{})
-		if err := p.decoder.Unmarshal(msg, &event); err != nil {
-			klog.V(1).Error(err, "event unmarshal错误")
+func (p *StdinInput) ReadEvent() chan map[string]interface{} {
+	p.one.Do(func() {
+		go p.read()
+	})
+	return p.fifo
+}
+
+func (p *StdinInput) read() {
+	for {
+		select {
+		case <-p.stop:
+			close(p.fifo)
+			break
+		default:
+			if p.scanner.Scan() {
+				t := p.scanner.Bytes()
+				msg := make([]byte, len(t))
+				copy(msg, t)
+				event := p.decoder.Decode(msg)
+				p.fifo <- event
+			}
+			if err := p.scanner.Err(); err != nil {
+				klog.Errorf("stdin scan error: %v", err)
+			} else {
+				// EOF here. when stdin is closed by C-D, cpu will raise up to 100% if not sleep
+				time.Sleep(time.Millisecond * 1000)
+			}
 		}
-		return event
 	}
-	if err := p.scanner.Err(); err != nil {
-		klog.Errorf("stdin scan error: %v", err)
-	} else {
-		// EOF here. when stdin is closed by C-D, cpu will raise up to 100% if not sleep
-		time.Sleep(time.Millisecond * 1000)
-	}
-	return nil
 }
 
 func (p *StdinInput) Shutdown() {
 	// what we need is to stop emit new event; close messages or not is not important
-	p.stop = true
+	close(p.stop)
 }

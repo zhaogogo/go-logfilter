@@ -34,7 +34,7 @@ func NewInputCell(input Input, cellConfig map[string]interface{}) (*InputCell, e
 		i.addFields = nil
 	}
 
-	return i
+	return i, nil
 }
 
 type InputCell struct {
@@ -53,15 +53,19 @@ func (i *InputCell) SetShutdownWhenNil(shutdownWhenNil bool) {
 	i.shutdownWhenNil = shutdownWhenNil
 }
 
-func (i *InputCell) Start() {
+func (i *InputCell) Start(worker int) {
+	for j := 0; j < worker; j++ {
+		go i.start()
+	}
+	<-i.shutdownChan
+}
+
+func (i *InputCell) start() {
 	//var firstNode *topology.ProcessorNode = box.buildTopology(workerIdx)
 
-	var (
-		event map[string]interface{}
-	)
-
-	for !i.stop {
-		event = i.input.ReadOneEvent()
+	eventCh := i.input.ReadEvent()
+	klog.V(10).Infof("-----> %T %p\n", eventCh, eventCh)
+	for event := range eventCh {
 		if i.prometheusCounter != nil {
 			i.prometheusCounter.Inc()
 		}
@@ -83,6 +87,7 @@ func (i *InputCell) Start() {
 		}
 		//firstNode.Process(event)
 		v, _ := json.Marshal(event)
-		fmt.Println(string(v))
+		fmt.Println("res: ", string(v))
 	}
+
 }

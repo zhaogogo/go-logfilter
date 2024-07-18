@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const appName string = "gologfilter"
+const appName string = "logfilter"
 
 var (
 	version     string
@@ -27,35 +27,33 @@ var (
 	pid         = os.Getpid()
 )
 
-var appOpts = &struct {
-	config     string
-	autoReload bool // 配置文件更新自动重启
-	pprof      bool
-	pprofAddr  string
-	cpuprofile string
-	memprofile string
-	version    bool
-
-	prometheus string
-
-	exitWhenNil bool
-}{}
+var appOpts = config.AppConfig{
+	Config:      "config",
+	AutoReload:  false,
+	Pprof:       false,
+	PprofAddr:   "",
+	Cpuprofile:  fmt.Sprintf("cpu.%v", pid),
+	Memprofile:  fmt.Sprintf("mem.%v", pid),
+	Version:     false,
+	Prometheus:  "",
+	ExitWhenNil: false,
+	Worker:      1,
+}
 
 func init() {
-	flag.StringVar(&appOpts.config, "config", appOpts.config, "path to configuration file or directory")
-	flag.BoolVar(&appOpts.autoReload, "reload", appOpts.autoReload, "if auto reload while config file changed")
+	flag.StringVar(&appOpts.Config, "config", appOpts.Config, "path to configuration file or directory")
+	flag.BoolVar(&appOpts.AutoReload, "reload", appOpts.AutoReload, "if auto reload while config file changed")
 
-	flag.BoolVar(&appOpts.pprof, "pprof", false, "pprof or not")
-	flag.StringVar(&appOpts.pprofAddr, "pprof-address", "127.0.0.1:8899", "default: 127.0.0.1:8899")
-	flag.StringVar(&appOpts.cpuprofile, "cpuprofile", fmt.Sprintf("cpu.%v", pid), "write cpu profile to `file`")
-	flag.StringVar(&appOpts.memprofile, "memprofile", fmt.Sprintf("mem.%v", pid), "write mem profile to `file`")
+	flag.BoolVar(&appOpts.Pprof, "pprof", false, "pprof or not")
+	flag.StringVar(&appOpts.PprofAddr, "pprof-address", "127.0.0.1:8899", "default: 127.0.0.1:8899")
+	flag.StringVar(&appOpts.Cpuprofile, "cpuprofile", fmt.Sprintf("cpu.%v", pid), "write cpu profile to `file`")
+	flag.StringVar(&appOpts.Memprofile, "memprofile", fmt.Sprintf("mem.%v", pid), "write mem profile to `file`")
 
-	flag.BoolVar(&appOpts.version, "version", false, "print version and exit")
+	flag.BoolVar(&appOpts.Version, "version", false, "print version and exit")
+	flag.StringVar(&appOpts.Prometheus, "prometheus", "", "address to expose prometheus metrics")
 
-	flag.StringVar(&appOpts.prometheus, "prometheus", "", "address to expose prometheus metrics")
-
-	flag.BoolVar(&appOpts.exitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
-
+	flag.BoolVar(&appOpts.ExitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
+	flag.IntVar(&appOpts.Worker, "worker", 1, "worker thread count")
 	klog.InitFlags(nil)
 	flag.Parse()
 }
@@ -76,36 +74,36 @@ func main() {
 	flag.Parse()
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
-	if appOpts.version {
+	if appOpts.Version {
 		fmt.Printf("%s version %s\n", appName, version)
 		return
 	}
 	klog.Infof("gologfilter version: %s  pid: %v", version, pid)
 	defer klog.Flush()
-	if appOpts.prometheus != "" {
+	if appOpts.Prometheus != "" {
 		go func() {
 			http.Handle("/metrics", promhttp.Handler())
-			klog.Infof("gologfilter prometheus and pprof listen: %s", appOpts.prometheus)
-			err := http.ListenAndServe(appOpts.prometheus, nil)
+			klog.Infof("gologfilter prometheus and pprof listen: %s", appOpts.Prometheus)
+			err := http.ListenAndServe(appOpts.Prometheus, nil)
 			if err != nil {
 				klog.Fatalf("%w", err)
 			}
 		}()
 	}
-	if appOpts.pprof {
+	if appOpts.Pprof {
 		go func() {
-			http.ListenAndServe(appOpts.pprofAddr, nil)
+			http.ListenAndServe(appOpts.PprofAddr, nil)
 		}()
 	}
 	go signal.ListenSignal(exit, reload, CPUProfile, MemProfile)
 	conf, err := config.ParseConfig(
-		file.NewSource(appOpts.config),
+		file.NewSource(appOpts.Config),
 	)
 	if err != nil {
 		klog.Fatalf("加载配置文件失败", err)
 	}
 
-	inputs, err := inputs.NewInputs(conf)
+	inputs, err := inputs.NewInputs(appOpts, conf)
 	if err != nil {
 		klog.Fatalf("构建inputs插件失败, err=%v", err)
 	}
@@ -138,7 +136,7 @@ func cpuProfileStart() {
 		return
 	}
 	binDir := path.Dir(binPath)
-	cpufd, err = os.Create(path.Join(binDir, appOpts.cpuprofile))
+	cpufd, err = os.Create(path.Join(binDir, appOpts.Cpuprofile))
 	if err != nil {
 		klog.Infof("could not create CPU profile: %s", err)
 		return
@@ -182,7 +180,7 @@ func memProfileStart() {
 		return
 	}
 	binDir := path.Dir(binPath)
-	memfd, err = os.Create(path.Join(binDir, appOpts.memprofile))
+	memfd, err = os.Create(path.Join(binDir, appOpts.Memprofile))
 	if err != nil {
 		klog.Infof("could not create memory profile: %s", err)
 		return
