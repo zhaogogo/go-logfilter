@@ -107,8 +107,12 @@ func main() {
 	if err != nil {
 		klog.Fatalf("构建inputs插件失败, err=%v", err)
 	}
-	go inputs.Start()
-	<-ctx.Done()
+	go func() {
+		<-ctx.Done()
+		fmt.Println("inputs.Stop()")
+		inputs.Stop()
+	}()
+	inputs.Start()
 }
 
 func exit() {

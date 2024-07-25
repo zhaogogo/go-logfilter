@@ -17,7 +17,7 @@ type StdinInput struct {
 
 	scanner *bufio.Scanner
 	fifo    chan map[string]interface{}
-	stop    chan struct{}
+	stop    bool
 }
 
 func init() {
@@ -35,7 +35,7 @@ func newStdinInput(config map[string]interface{}) Input {
 		decoder: textcodec.NewDecoder(codertype),
 		scanner: bufio.NewScanner(os.Stdin),
 		fifo:    make(chan map[string]interface{}, 1),
-		stop:    make(chan struct{}),
+		stop:    false,
 	}
 
 	return p
@@ -50,29 +50,30 @@ func (p *StdinInput) ReadEvent() chan map[string]interface{} {
 
 func (p *StdinInput) read() {
 	for {
-		select {
-		case <-p.stop:
+		if p.stop {
 			close(p.fifo)
 			break
-		default:
-			if p.scanner.Scan() {
-				t := p.scanner.Bytes()
-				msg := make([]byte, len(t))
-				copy(msg, t)
-				event := p.decoder.Decode(msg)
-				p.fifo <- event
-			}
-			if err := p.scanner.Err(); err != nil {
-				klog.Errorf("stdin scan error: %v", err)
-			} else {
-				// EOF here. when stdin is closed by C-D, cpu will raise up to 100% if not sleep
-				time.Sleep(time.Millisecond * 1000)
-			}
 		}
+		if p.scanner.Scan() {
+			t := p.scanner.Bytes()
+			msg := make([]byte, len(t))
+			copy(msg, t)
+			event := p.decoder.Decode(msg)
+			p.fifo <- event
+		}
+		if err := p.scanner.Err(); err != nil {
+			klog.Errorf("stdin scan error: %v", err)
+		} else {
+			// EOF here. when stdin is closed by C-D, cpu will raise up to 100% if not sleep
+			time.Sleep(time.Millisecond * 1000)
+		}
+
 	}
+	klog.Infof("stdin input plugin shutdown success")
 }
 
 func (p *StdinInput) Shutdown() {
 	// what we need is to stop emit new event; close messages or not is not important
-	close(p.stop)
+	klog.Infof("stdin plugin Shutdown")
+	p.stop = true
 }

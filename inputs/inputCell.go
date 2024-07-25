@@ -7,6 +7,7 @@ import (
 	"github.com/zhaogogo/go-logfilter/field"
 	"github.com/zhaogogo/go-logfilter/metrics"
 	"k8s.io/klog/v2"
+	"sync"
 )
 
 func NewInputCell(input Input, cellConfig map[string]interface{}) (*InputCell, error) {
@@ -54,13 +55,22 @@ func (i *InputCell) SetShutdownWhenNil(shutdownWhenNil bool) {
 }
 
 func (i *InputCell) Start(worker int) {
+	wg := sync.WaitGroup{}
+	wg.Add(worker)
 	for j := 0; j < worker; j++ {
-		go i.start()
+		go func(goid int) {
+			defer wg.Done()
+			i.start(goid)
+		}(j)
 	}
-	<-i.shutdownChan
+	wg.Wait()
 }
 
-func (i *InputCell) start() {
+func (i *InputCell) Shutdown() {
+	i.input.Shutdown()
+}
+
+func (i *InputCell) start(goid int) {
 	//var firstNode *topology.ProcessorNode = box.buildTopology(workerIdx)
 
 	eventCh := i.input.ReadEvent()
@@ -87,7 +97,7 @@ func (i *InputCell) start() {
 		}
 		//firstNode.Process(event)
 		v, _ := json.Marshal(event)
-		fmt.Println("res: ", string(v))
+		fmt.Printf("res: [%v] %v\n", goid, string(v))
 	}
-
+	klog.Infof("[%v]input cell %v read event stop", goid, i.config)
 }

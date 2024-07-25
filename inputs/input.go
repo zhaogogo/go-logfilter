@@ -61,5 +61,7 @@ func (i *Inputs) Start() {
 }
 
 func (i *Inputs) Stop() {
-
+	for _, input := range i.inputCell {
+		input.Shutdown()
+	}
 }
