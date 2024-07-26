@@ -10,8 +10,9 @@ import (
 	"sync"
 )
 
-func NewInputCell(input Input, cellConfig map[string]interface{}) (*InputCell, error) {
+func NewInputCell(inputType string, input Input, cellConfig map[string]interface{}) (*InputCell, error) {
 	i := &InputCell{
+		name:         inputType,
 		input:        input,
 		config:       cellConfig,
 		stop:         false,
@@ -39,6 +40,7 @@ func NewInputCell(input Input, cellConfig map[string]interface{}) (*InputCell, e
 }
 
 type InputCell struct {
+	name              string
 	input             Input
 	config            map[string]interface{}
 	stop              bool
@@ -74,7 +76,7 @@ func (i *InputCell) start(goid int) {
 	//var firstNode *topology.ProcessorNode = box.buildTopology(workerIdx)
 
 	eventCh := i.input.ReadEvent()
-	klog.V(10).Infof("-----> %T %p\n", eventCh, eventCh)
+	klog.V(10).Infof("start inputCell eveht chan: %T %p\n", eventCh, eventCh)
 	for event := range eventCh {
 		if i.prometheusCounter != nil {
 			i.prometheusCounter.Inc()
@@ -99,5 +101,5 @@ func (i *InputCell) start(goid int) {
 		v, _ := json.Marshal(event)
 		fmt.Printf("res: [%v] %v\n", goid, string(v))
 	}
-	klog.Infof("[%v]input cell %v read event stop", goid, i.config)
+	klog.Infof("[%v]input cell %v read event stop, len: %v", goid, i.name, len(eventCh))
 }

@@ -2,6 +2,7 @@ package inputs
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"plugin"
 )
@@ -12,45 +13,44 @@ var registeredInput map[string]BuildInputFunc = make(map[string]BuildInputFunc)
 
 func Register(inputType string, buildFn BuildInputFunc) {
 	if _, ok := registeredInput[inputType]; ok {
-		klog.Errorf("%s已经被注册了, 忽略 %T", inputType, buildFn)
+		klog.Errorf("input %s已经被注册了, 忽略 %T", inputType, buildFn)
 		return
 	}
 	registeredInput[inputType] = buildFn
 }
 
 // 获取INPUT类型
-func GetInput(inputType string, config map[string]interface{}) Input {
+func GetInput(inputType string, config map[string]interface{}) (Input, error) {
 	if v, ok := registeredInput[inputType]; ok {
-		return v(config)
+		return v(config), nil
 	}
-	klog.Infof("无法加载input[%s] %v插件, 尝试加载第三方插件", inputType, config)
+	klog.V(2).Infof("无法加载input[%s]插件, 尝试加载第三方插件", inputType)
 
 	pluginPath := inputType
 	output, err := getInputFromPlugin(pluginPath, config)
 	if err != nil {
-		klog.Errorf("加载三方插件错误, err=%v", err)
-		return nil
+		return nil, errors.Wrap(err, "加载三方插件错误")
 	}
-	return output
+	return output, nil
 }
 
 func getInputFromPlugin(pluginPath string, config map[string]interface{}) (Input, error) {
 	p, err := plugin.Open(pluginPath)
 	if err != nil {
-		return nil, fmt.Errorf("加载插件%s %v, err=%v", pluginPath, config, err)
+		return nil, err
 	}
 	newFunc, err := p.Lookup("New")
 	if err != nil {
-		return nil, fmt.Errorf("加载插件%s %v, 没有`New`函数, err=%s", pluginPath, config, err)
+		return nil, fmt.Errorf("加载插件%s, 没有New函数, err=%s", pluginPath, err)
 	}
 	f, ok := newFunc.(func(map[string]interface{}) interface{})
 	if !ok {
-		return nil, fmt.Errorf("加载插件%s %v, `New`函数签名错误", pluginPath, config)
+		return nil, fmt.Errorf("加载插件%s, New函数签名错误", pluginPath)
 	}
 	rst := f(config)
 	input, ok := rst.(Input)
 	if !ok {
-		return nil, fmt.Errorf("加载插件%s, `New`函数返回类型错误(%T)", pluginPath, rst)
+		return nil, fmt.Errorf("加载插件%s, New函数返回类型错误(%T)", pluginPath, rst)
 	}
 	return input, nil
 }

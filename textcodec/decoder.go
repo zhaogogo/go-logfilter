@@ -16,9 +16,9 @@ func NewDecoder(t string) Decoder {
 	case "plain":
 		return &plain.PlainDecoder{}
 	case "json":
-		return &json.JsonDecoder{UseNumber: true}
+		return &json.Jsoner{UseNumber: true}
 	case "json:not_usenumber":
-		return &json.JsonDecoder{UseNumber: false}
+		return &json.Jsoner{UseNumber: false}
 	default:
 		p, err := plugin.Open(t)
 		if err != nil {

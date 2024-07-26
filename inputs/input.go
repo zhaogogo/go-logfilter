@@ -3,36 +3,31 @@ package inputs
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"github.com/zhaogogo/go-logfilter/internal/config"
 	"k8s.io/klog/v2"
 	"sync"
 )
-
-const INPUTS = "inputs"
 
 type Input interface {
 	ReadEvent() chan map[string]interface{}
 	Shutdown()
 }
 
-func NewInputs(appconfig config.AppConfig, config map[string][]interface{}) (inputs *Inputs, err error) {
+func NewInputs(inputsConf []any) (inputs *Inputs, err error) {
 	inputs = &Inputs{
-		appConfig: appconfig,
-		config:    config,
+		config: inputsConf,
 	}
-	for inputIdx, inputC := range config[INPUTS] {
+	for inputIdx, inputC := range inputsConf {
 		var inputPlugin Input
 		c := inputC.(map[string]interface{})
 
 		for inputType, inputConfigI := range c {
 			klog.Infof("input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
 			inputConfig := inputConfigI.(map[string]interface{})
-			inputPlugin = GetInput(inputType, inputConfig)
-			if inputPlugin == nil {
-				err = fmt.Errorf("input插件不可用, input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
-				return
+			inputPlugin, err = GetInput(inputType, inputConfig)
+			if err != nil {
+				return nil, errors.Wrapf(err, "input插件不可用, input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
 			}
-			inputCell, err := NewInputCell(inputPlugin, inputConfig)
+			inputCell, err := NewInputCell(fmt.Sprintf("%s[%v]", inputType, inputIdx), inputPlugin, inputConfig)
 			if err != nil {
 				return nil, errors.Wrapf(err, "inputCell创建失败input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
 			}
@@ -43,18 +38,18 @@ func NewInputs(appconfig config.AppConfig, config map[string][]interface{}) (inp
 }
 
 type Inputs struct {
-	appConfig config.AppConfig
-	config    map[string][]interface{}
+	config    []any
 	inputCell []*InputCell
 }
 
-func (i *Inputs) Start() {
+func (i *Inputs) Start(worker int) {
 	var wg sync.WaitGroup
+	// 所有inputs开始读取事件
 	for _, input := range i.inputCell {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			input.Start(i.appConfig.Worker)
+			input.Start(worker)
 		}()
 	}
 	wg.Wait()

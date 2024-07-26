@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/zhaogogo/go-logfilter/inputs"
+	"github.com/zhaogogo/go-logfilter/core/process"
 	"github.com/zhaogogo/go-logfilter/internal/config"
 	"github.com/zhaogogo/go-logfilter/internal/config/file"
 	"github.com/zhaogogo/go-logfilter/internal/signal"
@@ -102,17 +102,16 @@ func main() {
 	if err != nil {
 		klog.Fatalf("加载配置文件失败", err)
 	}
-
-	inputs, err := inputs.NewInputs(appOpts, conf)
+	process, err := process.NewProcess(appOpts, conf)
 	if err != nil {
 		klog.Fatalf("构建inputs插件失败, err=%v", err)
 	}
 	go func() {
 		<-ctx.Done()
-		fmt.Println("inputs.Stop()")
-		inputs.Stop()
+		klog.Infof("logfilter process stop")
+		process.Shutdown()
 	}()
-	inputs.Start()
+	process.Start()
 }
 
 func exit() {
