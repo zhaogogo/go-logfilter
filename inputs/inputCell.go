@@ -56,10 +56,14 @@ func (i *InputCell) SetShutdownWhenNil(shutdownWhenNil bool) {
 	i.shutdownWhenNil = shutdownWhenNil
 }
 
-func (i *InputCell) Start(worker int) {
+func (i *InputCell) Start() {
+	threads := 1
+	if t, ok := i.config["threads"]; ok {
+		fmt.Printf("---> %T\n", t)
+	}
 	wg := sync.WaitGroup{}
-	wg.Add(worker)
-	for j := 0; j < worker; j++ {
+	wg.Add(threads)
+	for j := 0; j < threads; j++ {
 		go func(goid int) {
 			defer wg.Done()
 			i.start(goid)
@@ -97,6 +101,7 @@ func (i *InputCell) start(goid int) {
 		for fs, v := range i.addFields {
 			event = fs.SetField(event, v.Render(event), "", false)
 		}
+		//processer.Processor.Process(event)
 		//firstNode.Process(event)
 		v, _ := json.Marshal(event)
 		fmt.Printf("res: [%v] %v\n", goid, string(v))

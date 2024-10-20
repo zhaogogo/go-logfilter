@@ -1,6 +1,7 @@
 package process
 
 import (
+	"context"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/zhaogogo/go-logfilter/inputs"
@@ -23,13 +24,15 @@ type ProcesserNode struct {
 }
 
 type Process struct {
+	ctx           context.Context
 	appConfig     config.AppConfig
 	Inputs        *inputs.Inputs
 	ProcesserNode *ProcesserNode
 }
 
-func NewProcess(appConfig config.AppConfig, conf map[string][]interface{}) (*Process, error) {
+func NewProcess(ctx context.Context, appConfig config.AppConfig, conf map[string][]interface{}) (*Process, error) {
 	p := &Process{
+		ctx:       ctx,
 		appConfig: appConfig,
 	}
 	if inputConfs, ok := conf[INPUTS]; ok {
@@ -44,12 +47,26 @@ func NewProcess(appConfig config.AppConfig, conf map[string][]interface{}) (*Pro
 	} else {
 		return nil, errors.New("没有inputs配置")
 	}
-
+	//if outputConfs, ok := conf[OUTPUT]; ok {
+	//	if outputConfs == nil || len(outputConfs) == 0 {
+	//		return nil, errors.New(fmt.Sprintf("outputs配置解析错误, outputs配置: %#v", outputConfs))
+	//	}
+	//	outputs, err := outputs.NewOutputs(outputConfs)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	p.ProcesserNode = &ProcesserNode{
+	//		Processor: outputs,
+	//		Next:      nil,
+	//	}
+	//} else {
+	//	return nil, errors.New("没有outputs配置")
+	//}
 	return p, nil
 }
 
 func (p *Process) Start() {
-	p.Inputs.Start(p.appConfig.Worker)
+	p.Inputs.Start()
 }
 
 func (p *Process) Shutdown() {

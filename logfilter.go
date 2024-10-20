@@ -37,7 +37,7 @@ var appOpts = config.AppConfig{
 	Version:     false,
 	Prometheus:  "",
 	ExitWhenNil: false,
-	Worker:      1,
+	//Worker:      1,
 }
 
 func init() {
@@ -53,7 +53,7 @@ func init() {
 	flag.StringVar(&appOpts.Prometheus, "prometheus", "", "address to expose prometheus metrics")
 
 	flag.BoolVar(&appOpts.ExitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
-	flag.IntVar(&appOpts.Worker, "worker", 1, "worker thread count")
+	//flag.IntVar(&appOpts.Worker, "worker", 1, "worker thread count")
 	klog.InitFlags(nil)
 	flag.Parse()
 }
@@ -102,7 +102,7 @@ func main() {
 	if err != nil {
 		klog.Fatalf("加载配置文件失败", err)
 	}
-	process, err := process.NewProcess(appOpts, conf)
+	process, err := process.NewProcess(ctx, appOpts, conf)
 	if err != nil {
 		klog.Fatalf("构建inputs插件失败, err=%v", err)
 	}
@@ -112,9 +112,11 @@ func main() {
 		process.Shutdown()
 	}()
 	process.Start()
+	fmt.Println("--->stop")
 }
 
 func exit() {
+	fmt.Println("退出")
 	cancel()
 }
 

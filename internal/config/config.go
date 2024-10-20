@@ -12,5 +12,5 @@ type AppConfig struct {
 	Prometheus string
 
 	ExitWhenNil bool
-	Worker      int
+	//Worker      int
 }

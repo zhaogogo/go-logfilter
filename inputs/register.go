@@ -24,7 +24,7 @@ func GetInput(inputType string, config map[string]interface{}) (Input, error) {
 	if v, ok := registeredInput[inputType]; ok {
 		return v(config), nil
 	}
-	klog.V(2).Infof("无法加载input[%s]插件, 尝试加载第三方插件", inputType)
+	klog.V(2).Infof("无法加载内置插件, 尝试加载第三方插件", inputType)
 
 	pluginPath := inputType
 	output, err := getInputFromPlugin(pluginPath, config)
@@ -41,16 +41,16 @@ func getInputFromPlugin(pluginPath string, config map[string]interface{}) (Input
 	}
 	newFunc, err := p.Lookup("New")
 	if err != nil {
-		return nil, fmt.Errorf("加载插件%s, 没有New函数, err=%s", pluginPath, err)
+		return nil, fmt.Errorf("加载三方插件, 没有New函数, err=%s", err)
 	}
 	f, ok := newFunc.(func(map[string]interface{}) interface{})
 	if !ok {
-		return nil, fmt.Errorf("加载插件%s, New函数签名错误", pluginPath)
+		return nil, fmt.Errorf("加载三方插件, New函数签名错误")
 	}
 	rst := f(config)
 	input, ok := rst.(Input)
 	if !ok {
-		return nil, fmt.Errorf("加载插件%s, New函数返回类型错误(%T)", pluginPath, rst)
+		return nil, fmt.Errorf("加载三方插件, New函数返回类型错误(%T)", rst)
 	}
 	return input, nil
 }

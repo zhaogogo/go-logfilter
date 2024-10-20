@@ -3,11 +3,9 @@ package inputs
 import (
 	"bufio"
 	"github.com/zhaogogo/go-logfilter/textcodec"
+	"k8s.io/klog/v2"
 	"os"
 	"sync"
-	"time"
-
-	"k8s.io/klog/v2"
 )
 
 type StdinInput struct {
@@ -42,14 +40,14 @@ func newStdinInput(config map[string]interface{}) Input {
 }
 
 func (p *StdinInput) ReadEvent() chan map[string]interface{} {
-	p.one.Do(func() {
-		go p.read()
-	})
+
+	go p.read()
+
 	return p.fifo
 }
 
 func (p *StdinInput) read() {
-	for {
+	for !p.stop {
 		if p.stop {
 			close(p.fifo)
 			break
@@ -63,9 +61,6 @@ func (p *StdinInput) read() {
 		}
 		if err := p.scanner.Err(); err != nil {
 			klog.Errorf("stdin scan error: %v", err)
-		} else {
-			// EOF here. when stdin is closed by C-D, cpu will raise up to 100% if not sleep
-			time.Sleep(time.Millisecond * 1000)
 		}
 
 	}

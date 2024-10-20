@@ -42,14 +42,14 @@ type Inputs struct {
 	inputCell []*InputCell
 }
 
-func (i *Inputs) Start(worker int) {
-	var wg sync.WaitGroup
+func (i *Inputs) Start() {
+	wg := sync.WaitGroup{}
 	// 所有inputs开始读取事件
 	for _, input := range i.inputCell {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			input.Start(worker)
+			input.Start()
 		}()
 	}
 	wg.Wait()
