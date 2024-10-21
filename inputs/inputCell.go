@@ -3,11 +3,12 @@ package inputs
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog/log"
 	"github.com/zhaogogo/go-logfilter/field"
 	"github.com/zhaogogo/go-logfilter/metrics"
-	"k8s.io/klog/v2"
-	"sync"
 )
 
 func NewInputCell(inputType string, input Input, cellConfig map[string]interface{}) (*InputCell, error) {
@@ -20,7 +21,7 @@ func NewInputCell(inputType string, input Input, cellConfig map[string]interface
 	}
 	p, err := metrics.NewPrometheusCounter(cellConfig)
 	if err != nil {
-		klog.Fatal(err)
+		log.Fatal().Msg(err.Error())
 	}
 	i.prometheusCounter = p
 	if add_fields, ok := cellConfig["add_fields"]; ok && add_fields != nil {
@@ -28,7 +29,7 @@ func NewInputCell(inputType string, input Input, cellConfig map[string]interface
 		for k, v := range add_fields.(map[string]interface{}) {
 			fieldSetter := field.NewFieldSetter(k)
 			if fieldSetter == nil {
-				klog.Fatalf("fieldSetter构建失败", k)
+				log.Fatal().Msgf("fieldSetter构建失败", k)
 			}
 			i.addFields[fieldSetter] = field.GetValueRender(v)
 		}
@@ -80,18 +81,18 @@ func (i *InputCell) start(goid int) {
 	//var firstNode *topology.ProcessorNode = box.buildTopology(workerIdx)
 
 	eventCh := i.input.ReadEvent()
-	klog.V(10).Infof("start inputCell eveht chan: %T %p\n", eventCh, eventCh)
+	log.Info().Msgf("[%v]start inputCell event chan: %T %p\n", goid, eventCh, eventCh)
 	for event := range eventCh {
 		if i.prometheusCounter != nil {
 			i.prometheusCounter.Inc()
 		}
 		if event == nil {
-			klog.V(5).Info("received nil message.")
+			log.Info().Msgf("received nil message.")
 			if i.stop {
 				break
 			}
 			if i.shutdownWhenNil {
-				klog.Info("received nil message. shutdown...")
+				log.Info().Msgf("received nil message. shutdown...")
 				i.exit()
 				break
 			} else {
@@ -106,5 +107,5 @@ func (i *InputCell) start(goid int) {
 		v, _ := json.Marshal(event)
 		fmt.Printf("res: [%v] %v\n", goid, string(v))
 	}
-	klog.Infof("[%v]input cell %v read event stop, len: %v", goid, i.name, len(eventCh))
+	log.Info().Msgf("[%v]input cell %v read event stop, len: %v", goid, i.name, len(eventCh))
 }

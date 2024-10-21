@@ -2,10 +2,11 @@ package inputs
 
 import (
 	"bufio"
-	"github.com/zhaogogo/go-logfilter/textcodec"
-	"k8s.io/klog/v2"
 	"os"
 	"sync"
+
+	"github.com/rs/zerolog/log"
+	"github.com/zhaogogo/go-logfilter/textcodec"
 )
 
 type StdinInput struct {
@@ -32,7 +33,7 @@ func newStdinInput(config map[string]interface{}) Input {
 		config:  config,
 		decoder: textcodec.NewDecoder(codertype),
 		scanner: bufio.NewScanner(os.Stdin),
-		fifo:    make(chan map[string]interface{}, 1),
+		fifo:    make(chan map[string]interface{}, 3),
 		stop:    false,
 	}
 
@@ -48,10 +49,6 @@ func (p *StdinInput) ReadEvent() chan map[string]interface{} {
 
 func (p *StdinInput) read() {
 	for !p.stop {
-		if p.stop {
-			close(p.fifo)
-			break
-		}
 		if p.scanner.Scan() {
 			t := p.scanner.Bytes()
 			msg := make([]byte, len(t))
@@ -60,15 +57,17 @@ func (p *StdinInput) read() {
 			p.fifo <- event
 		}
 		if err := p.scanner.Err(); err != nil {
-			klog.Errorf("stdin scan error: %v", err)
+			log.Error().Msgf("stdin scan error: %v", err)
 		}
 
 	}
-	klog.Infof("stdin input plugin shutdown success")
+	close(p.fifo)
+	log.Info().Msg("stdin input plugin close channel")
+	log.Info().Msg("stdin input plugin shutdown success")
 }
 
 func (p *StdinInput) Shutdown() {
 	// what we need is to stop emit new event; close messages or not is not important
-	klog.Infof("stdin plugin Shutdown")
+	log.Info().Msg("stdin plugin Shutdown")
 	p.stop = true
 }

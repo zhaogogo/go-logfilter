@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/klog/v2"
+	"github.com/rs/zerolog/log"
 )
 
 type field struct {
@@ -99,7 +99,7 @@ func NewIndexRender(t string) *IndexRender {
 func (r *IndexRender) SetTimeLocation(loc string) {
 	location, err := time.LoadLocation(loc)
 	if err != nil {
-		klog.Fatalf("invalid localtion: %s", loc)
+		log.Fatal().Msgf("invalid localtion: %s", loc)
 	}
 	r.location = location
 }

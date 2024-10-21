@@ -2,9 +2,10 @@ package inputs
 
 import (
 	"fmt"
+	"plugin"
+
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"plugin"
 )
 
 type BuildInputFunc func(map[string]interface{}) Input

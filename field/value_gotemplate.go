@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/Masterminds/sprig/v3"
-	"k8s.io/klog/v2"
 	"reflect"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/Masterminds/sprig/v3"
+	"github.com/rs/zerolog/log"
 )
 
 type TemplateValueRender struct {
@@ -72,7 +73,7 @@ func init() {
 		}
 		d, err := time.ParseDuration(s)
 		if err != nil {
-			klog.Error(err)
+			log.Err(err)
 			return false
 		}
 		dst := time.Now().Add(d)
@@ -86,7 +87,7 @@ func init() {
 		}
 		d, err := time.ParseDuration(s)
 		if err != nil {
-			klog.Error(err)
+			log.Err(err)
 			return false
 		}
 		dst := time.Now().Add(d)
@@ -139,7 +140,7 @@ func init() {
 func NewTemplateValueRender(t string) *TemplateValueRender {
 	tmpl, err := template.New(t).Funcs(funcMap).Parse(t)
 	if err != nil {
-		klog.Fatalf("could not parse template %s:%s", t, err)
+		log.Fatal().Msgf("could not parse template %s:%s", t, err)
 	}
 	return &TemplateValueRender{
 		tmpl: tmpl,

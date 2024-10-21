@@ -2,8 +2,9 @@ package inputs
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
+	"github.com/rs/zerolog/log"
 )
 
 type Input interface {
@@ -20,7 +21,7 @@ func NewInputs(inputsConf []any) (inputs *Inputs, err error) {
 		c := inputC.(map[string]interface{})
 
 		for inputType, inputConfigI := range c {
-			klog.Infof("input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
+			log.Info().Msgf("input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
 			inputConfig := inputConfigI.(map[string]interface{})
 			inputPlugin, err = GetInput(inputType, inputConfig)
 			if err != nil {
@@ -42,16 +43,10 @@ type Inputs struct {
 }
 
 func (i *Inputs) Start() {
-	//wg := sync.WaitGroup{}
-	//// 所有inputs开始读取事件
+	// 所有inputs开始读取事件
 	for _, input := range i.inputCell {
-		//	wg.Add(1)
-		//	go func() {
-		//		defer wg.Done()
 		input.Start()
-		//	}()
 	}
-	//wg.Wait()
 }
 
 func (i *Inputs) Stop() {
