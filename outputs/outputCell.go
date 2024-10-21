@@ -2,9 +2,9 @@ package outputs
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog/log"
 	"github.com/zhaogogo/go-logfilter/condition"
 	"github.com/zhaogogo/go-logfilter/metrics"
-	"k8s.io/klog/v2"
 )
 
 func NewOutputCell(outputType string, output Output, cellConfig map[string]interface{}) (*OutputCell, error) {
@@ -16,7 +16,7 @@ func NewOutputCell(outputType string, output Output, cellConfig map[string]inter
 	}
 	p, err := metrics.NewPrometheusCounter(cellConfig)
 	if err != nil {
-		klog.Fatal(err)
+		log.Fatal().Err(err)
 	}
 	o.prometheusCounter = p
 	//if add_fields, ok := cellConfig["add_fields"]; ok && add_fields != nil {

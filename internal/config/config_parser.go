@@ -1,10 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/zhaogogo/go-logfilter/encoding"
 	"gopkg.in/yaml.v3"
-	"k8s.io/klog/v2"
 )
 
 type Config map[string]interface{}
@@ -23,17 +24,17 @@ func ParseConfig(source Source) (map[string][]interface{}, error) {
 		c := make(map[string]interface{})
 		code, ok := encoding.GetCodec(kv.Format)
 		if !ok {
-			klog.Infof("未注册的文件类型 key=%s format=%s", kv.Key, kv.Format)
+			log.Info().Msgf("未注册的文件类型 key=%s format=%s", kv.Key, kv.Format)
 			continue
 		}
-		klog.Infof("解析文件 %s", kv.Key)
+		log.Info().Msgf("解析文件 %s", kv.Key)
 		if err := code.Unmarshal(kv.Value, c); err != nil {
 			return nil, errors.Wrapf(err, "解析文件%s失败", kv.Key)
 		}
 		conf = MergeConfig(conf, c)
 	}
 	confy, _ := yaml.Marshal(conf)
-	klog.Infof("合并后配置文件为:\n%s", confy)
+	fmt.Printf("合并后配置文件为: %s\n", confy)
 	return conf, nil
 }
 

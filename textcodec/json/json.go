@@ -9,12 +9,12 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Jsoner struct {
-	UseNumber bool
+	TimestampKey string
+	UseNumber    bool
 }
 
 func (jd *Jsoner) Decode(value []byte) map[string]interface{} {
 	rst := make(map[string]interface{})
-	rst["@timestamp"] = time.Now()
 	d := json.NewDecoder(bytes.NewReader(value))
 
 	if jd.UseNumber {
@@ -23,15 +23,16 @@ func (jd *Jsoner) Decode(value []byte) map[string]interface{} {
 	err := d.Decode(&rst)
 	if err != nil || d.More() {
 		return map[string]interface{}{
-			"@timestamp": time.Now(),
-			"message":    string(value),
+			jd.TimestampKey: time.Now(),
+			"message":       string(value),
 		}
 	}
-
+	if _, ok := rst[jd.TimestampKey]; !ok {
+		rst[jd.TimestampKey] = time.Now()
+	}
 	return rst
 }
 
 func (j *Jsoner) Encode(v interface{}) ([]byte, error) {
-
 	return json.Marshal(v)
 }

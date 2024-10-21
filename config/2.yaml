@@ -4,5 +4,5 @@
 #  - Stdin2-2:
 #      codec: json
 filters:
-  - Date2
-  - Date3
+#  - Date2: {}
+#  - Date3: {}

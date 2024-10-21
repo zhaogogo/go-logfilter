@@ -1,8 +1,8 @@
 package textcodec
 
 import (
+	"github.com/rs/zerolog/log"
 	"github.com/zhaogogo/go-logfilter/textcodec/json"
-	"k8s.io/klog/v2"
 	"plugin"
 )
 
@@ -21,11 +21,11 @@ func NewEncoder(t string) Encoder {
 	// try plugin
 	p, err := plugin.Open(t)
 	if err != nil {
-		klog.Fatalf("could not open %s: %s", t, err)
+		log.Fatal().Msgf("could not open %s: %s", t, err)
 	}
 	newFunc, err := p.Lookup("New")
 	if err != nil {
-		klog.Fatalf("could not find New function in %s: %s", t, err)
+		log.Fatal().Msgf("could not find New function in %s: %s", t, err)
 	}
 	return newFunc.(func() interface{})().(Encoder)
 }

@@ -5,7 +5,7 @@ import (
 	"plugin"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
+	"github.com/rs/zerolog/log"
 )
 
 type BuildInputFunc func(map[string]interface{}) Input
@@ -14,7 +14,7 @@ var registeredInput map[string]BuildInputFunc = make(map[string]BuildInputFunc)
 
 func Register(inputType string, buildFn BuildInputFunc) {
 	if _, ok := registeredInput[inputType]; ok {
-		klog.Errorf("input %s已经被注册了, 忽略 %T", inputType, buildFn)
+		log.Error().Msgf("input %s已经被注册了, 忽略 %T", inputType, buildFn)
 		return
 	}
 	registeredInput[inputType] = buildFn
@@ -25,7 +25,7 @@ func GetInput(inputType string, config map[string]interface{}) (Input, error) {
 	if v, ok := registeredInput[inputType]; ok {
 		return v(config), nil
 	}
-	klog.V(2).Infof("无法加载内置插件, 尝试加载第三方插件", inputType)
+	log.Info().Msgf("无法加载内置插件, 尝试加载第三方插件", inputType)
 
 	pluginPath := inputType
 	output, err := getInputFromPlugin(pluginPath, config)

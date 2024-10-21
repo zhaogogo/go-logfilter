@@ -1,14 +1,13 @@
-package stdout
+package outputs
 
 import (
 	"fmt"
-	"github.com/zhaogogo/go-logfilter/outputs"
+	"github.com/rs/zerolog/log"
 	"github.com/zhaogogo/go-logfilter/textcodec"
-	"k8s.io/klog/v2"
 )
 
 func init() {
-	outputs.Register("stdout", newStdoutOutput)
+	Register("stdout", newStdoutOutput)
 }
 
 type StdoutOutput struct {
@@ -16,7 +15,7 @@ type StdoutOutput struct {
 	encoder textcodec.Encoder
 }
 
-func newStdoutOutput(config map[string]interface{}) outputs.Output {
+func newStdoutOutput(config map[string]interface{}) Output {
 	p := &StdoutOutput{
 		config: config,
 	}
@@ -34,9 +33,10 @@ func newStdoutOutput(config map[string]interface{}) outputs.Output {
 func (p *StdoutOutput) Emit(event map[string]interface{}) {
 	buf, err := p.encoder.Encode(event)
 	if err != nil {
-		klog.Errorf("marshal %v error:%s", event, err)
+		log.Error().Msgf("marshal %v error:%s", event, err)
+
 	}
-	fmt.Println(string(buf))
+	fmt.Println("xxxxx", string(buf))
 }
 
 func (p *StdoutOutput) Shutdown() {}

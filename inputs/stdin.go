@@ -24,14 +24,26 @@ func init() {
 }
 
 func newStdinInput(config map[string]interface{}) Input {
-	var codertype string = "plain"
+	var (
+		codertype    string = "plain"
+		timestampkey        = "timestamp"
+	)
 	if v, ok := config["codec"]; ok {
-		codertype = v.(string)
+		switch v.(type) {
+		case string:
+			codertype = v.(string)
+		}
 	}
-	p := &StdinInput{
+	if v, ok := config["timestamp"]; ok {
+		switch v.(type) {
+		case string:
+			timestampkey = v.(string)
+		}
+	}
 
+	p := &StdinInput{
 		config:  config,
-		decoder: textcodec.NewDecoder(codertype),
+		decoder: textcodec.NewDecoder(codertype, timestampkey),
 		scanner: bufio.NewScanner(os.Stdin),
 		fifo:    make(chan map[string]interface{}, 3),
 		stop:    false,
@@ -68,6 +80,6 @@ func (p *StdinInput) read() {
 
 func (p *StdinInput) Shutdown() {
 	// what we need is to stop emit new event; close messages or not is not important
-	log.Info().Msg("stdin plugin Shutdown")
+	log.Info().Msg("stdin plugin Shutdown...")
 	p.stop = true
 }

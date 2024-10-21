@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"k8s.io/klog/v2"
+	"github.com/rs/zerolog/log"
 	"sync"
 )
 
@@ -29,7 +29,7 @@ func NewPrometheusCounter(config map[string]interface{}) (prometheus.Counter, er
 		}
 
 		key := hashValue(opts)
-		klog.Infof("创建prometheus指标, %s", key)
+		log.Info().Msgf("创建prometheus指标, %s", key)
 		if _, ok := counterManager[key]; ok {
 			return nil, errors.New(fmt.Sprintf("prometheus配置重复 prometheus_conf=%v", promConf))
 		}

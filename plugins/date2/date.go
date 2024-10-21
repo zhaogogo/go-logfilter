@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"k8s.io/klog/v2"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
+	"github.com/zhaogogo/go-logfilter/field"
 	"math"
 	"reflect"
 	"strconv"
@@ -133,13 +135,13 @@ type DateFilter struct {
 	dateParsers  []DateParser
 	overwrite    bool
 	src          string
-	srcVR        value_render.ValueRender
+	srcVR        field.ValueRender
 	target       string
-	targetFS     field_setter.FieldSetter
+	targetFS     field.FieldSetter
 	targetFormat string
 }
 
-func New(config map[interface{}]interface{}) topology.Filter {
+func New(config map[interface{}]interface{}) *DateFilter {
 	plugin := &DateFilter{
 		config:      config,
 		overwrite:   true,
@@ -153,16 +155,16 @@ func New(config map[interface{}]interface{}) topology.Filter {
 	if srcValue, ok := config["src"]; ok {
 		plugin.src = srcValue.(string)
 	} else {
-		klog.Fatal("src must be set in date filter plugin")
+		log.Fatal().Msg("src must be set in date filter plugin")
 	}
-	plugin.srcVR = value_render.GetValueRender2(plugin.src)
+	plugin.srcVR = field.GetValueRender2(plugin.src)
 
 	if targetI, ok := config["target"]; ok {
 		plugin.target = targetI.(string)
 	} else {
 		plugin.target = "@timestamp"
 	}
-	plugin.targetFS = field_setter.NewFieldSetter(plugin.target)
+	plugin.targetFS = field.NewFieldSetter(plugin.target)
 	if targetFormat, ok := config["targetFormat"]; ok {
 		plugin.targetFormat = targetFormat.(string)
 	}
@@ -174,7 +176,7 @@ func New(config map[interface{}]interface{}) topology.Filter {
 	if locationI, ok := config["location"]; ok {
 		location, err = time.LoadLocation(locationI.(string))
 		if err != nil {
-			klog.Fatalf("load location error:%s", err)
+			log.Fatal().Msgf("load location error:%s", err)
 		}
 	} else {
 		location = nil
@@ -187,7 +189,7 @@ func New(config map[interface{}]interface{}) topology.Filter {
 			plugin.dateParsers = append(plugin.dateParsers, getDateParser(formatI.(string), location, addYear))
 		}
 	} else {
-		klog.Fatal("formats must be set in date filter plugin")
+		log.Fatal().Msg("formats must be set in date filter plugin")
 	}
 
 	return plugin

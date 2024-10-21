@@ -2,13 +2,17 @@ inputs:
   - stdin:
       codec: json
       prometheus_counter:
-        namespace: "xx"
+        namespace: ""
         subsystem: ""
-        name: "xn"
+        name: "logfilter_stdin"
       add_fields:
         "[x1][x2]": 123
       threads: 3
+      timestamp: timestamp
 filters:
+  - hello:
+      echo: hello
 
 outputs:
-  - stdout: {}
+  - stdout:
+      codec: json

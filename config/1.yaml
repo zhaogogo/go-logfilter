@@ -4,5 +4,6 @@
 #  - Stdin1-2:
 #      codec: json
 filters:
-  - Date2
-  - Test2
+  - hello:
+      echo: "xxx"
+#  - Test2: {}

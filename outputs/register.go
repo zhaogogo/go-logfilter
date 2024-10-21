@@ -3,7 +3,7 @@ package outputs
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
+	"github.com/rs/zerolog/log"
 	"plugin"
 )
 
@@ -18,18 +18,18 @@ var registeredOutput map[string]BuildOutputFunc = make(map[string]BuildOutputFun
 
 func Register(outputType string, buildFn BuildOutputFunc) {
 	if _, ok := registeredOutput[outputType]; ok {
-		klog.Errorf("output %s已经被注册了, 忽略 %T", outputType, buildFn)
+		log.Error().Msgf("output %s已经被注册了, 忽略 %T", outputType, buildFn)
 		return
 	}
 	registeredOutput[outputType] = buildFn
 }
 
-// 获取INPUT类型
+// 获取OUTPUT类型
 func GetOutput(outputType string, config map[string]interface{}) (Output, error) {
 	if v, ok := registeredOutput[outputType]; ok {
 		return v(config), nil
 	}
-	klog.V(2).Infof("无法加载output[%s]插件, 尝试加载第三方插件", outputType)
+	log.Info().Msgf("无法加载output[%s]插件, 尝试加载第三方插件", outputType)
 
 	pluginPath := outputType
 	output, err := getOutputFromPlugin(pluginPath, config)

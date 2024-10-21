@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -27,6 +28,7 @@ var (
 	version     string
 	hostName, _ = os.Hostname()
 	pid         = os.Getpid()
+	logpath     = ""
 )
 
 var appOpts = config.AppConfig{
@@ -55,20 +57,25 @@ func init() {
 	flag.StringVar(&appOpts.Prometheus, "prometheus", "", "address to expose prometheus metrics")
 
 	flag.BoolVar(&appOpts.ExitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
+
+	flag.StringVar(&logpath, "log", "", "日志文件")
 	//flag.IntVar(&appOpts.Worker, "worker", 1, "worker thread count")
 	// klog.InitFlags(nil)
 
-	flag.Parse()
 }
 
 func initLogger(logpath string) {
-	log.Logger = log.Output(&lumberjack.Logger{
-		Filename:   logpath,
-		MaxSize:    1000,
-		MaxAge:     7,
-		MaxBackups: 7,
-		Compress:   false,
-	}).With().CallerWithSkipFrameCount(2).Logger()
+	var w io.Writer = os.Stdout
+	if logpath != "" {
+		w = &lumberjack.Logger{
+			Filename:   logpath,
+			MaxSize:    1000,
+			MaxAge:     7,
+			MaxBackups: 7,
+			Compress:   false,
+		}
+	}
+	log.Logger = log.Output(w).With().CallerWithSkipFrameCount(2).Logger()
 }
 
 var (
@@ -85,6 +92,7 @@ func reload() {
 
 func main() {
 	flag.Parse()
+	initLogger(logpath)
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 	if appOpts.Version {
@@ -117,11 +125,12 @@ func main() {
 	}
 	process, err := process.NewProcess(ctx, appOpts, conf)
 	if err != nil {
-		log.Info().Msgf("构建inputs插件失败, err=%v", err)
+		log.Err(err).Msg("构建process失败")
+		return
 	}
 	go func() {
 		<-ctx.Done()
-		log.Info().Msgf("logfilter process stop")
+		log.Info().Msgf("logfilter process stoping...")
 		process.Shutdown()
 	}()
 	process.Start()

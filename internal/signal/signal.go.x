@@ -2,7 +2,7 @@ package signal
 
 import (
 	"fmt"
-	"k8s.io/klog/v2"
+	"github.com/rs/zerolog/log"
 	"os"
 	"os/signal"
 	"syscall"

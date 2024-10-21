@@ -3,6 +3,8 @@ package inputs
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
+	"github.com/zhaogogo/go-logfilter/core"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -11,13 +13,19 @@ import (
 	"github.com/zhaogogo/go-logfilter/metrics"
 )
 
-func NewInputCell(inputType string, input Input, cellConfig map[string]interface{}) (*InputCell, error) {
+func NewInputCell(inputType string, input Input, cellConfig map[string]interface{}, process core.Processer) (*InputCell, error) {
 	i := &InputCell{
-		name:         inputType,
-		input:        input,
-		config:       cellConfig,
-		stop:         false,
+		name:   inputType,
+		input:  input,
+		config: cellConfig,
+		//stop:         false,
 		shutdownChan: make(chan struct{}, 1),
+	}
+
+	if process == nil {
+		return nil, errors.New("process Node is nil")
+	} else {
+		i.process = process
 	}
 	p, err := metrics.NewPrometheusCounter(cellConfig)
 	if err != nil {
@@ -29,7 +37,7 @@ func NewInputCell(inputType string, input Input, cellConfig map[string]interface
 		for k, v := range add_fields.(map[string]interface{}) {
 			fieldSetter := field.NewFieldSetter(k)
 			if fieldSetter == nil {
-				log.Fatal().Msgf("fieldSetter构建失败", k)
+				log.Fatal().Msgf("input fieldSetter构建失败", k)
 			}
 			i.addFields[fieldSetter] = field.GetValueRender(v)
 		}
@@ -41,14 +49,15 @@ func NewInputCell(inputType string, input Input, cellConfig map[string]interface
 }
 
 type InputCell struct {
-	name              string
-	input             Input
-	config            map[string]interface{}
-	stop              bool
+	name   string
+	input  Input
+	config map[string]interface{}
+	//stop              bool
 	shutdownChan      chan struct{}
 	shutdownWhenNil   bool
 	prometheusCounter prometheus.Counter
-	exit              func()
+	process           core.Processer
+	//exit              func()
 
 	addFields map[field.FieldSetter]field.ValueRender
 }
@@ -88,12 +97,12 @@ func (i *InputCell) start(goid int) {
 		}
 		if event == nil {
 			log.Info().Msgf("received nil message.")
-			if i.stop {
-				break
-			}
+			//if i.stop {
+			//	break
+			//}
 			if i.shutdownWhenNil {
 				log.Info().Msgf("received nil message. shutdown...")
-				i.exit()
+				//i.exit()
 				break
 			} else {
 				continue
@@ -102,10 +111,10 @@ func (i *InputCell) start(goid int) {
 		for fs, v := range i.addFields {
 			event = fs.SetField(event, v.Render(event), "", false)
 		}
-		//processer.Processor.Process(event)
-		//firstNode.Process(event)
+
 		v, _ := json.Marshal(event)
 		fmt.Printf("res: [%v] %v\n", goid, string(v))
+		i.process.Process(event)
 	}
 	log.Info().Msgf("[%v]input cell %v read event stop, len: %v", goid, i.name, len(eventCh))
 }

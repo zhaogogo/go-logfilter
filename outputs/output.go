@@ -3,7 +3,7 @@ package outputs
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
+	"github.com/rs/zerolog/log"
 )
 
 func NewOutputs(outputConfig []any) (*Outputs, error) {
@@ -13,7 +13,7 @@ func NewOutputs(outputConfig []any) (*Outputs, error) {
 	for outputIdx, outputC := range outputConfig {
 		c := outputC.(map[string]interface{})
 		for outputType, outputConfigI := range c {
-			klog.Infof("output[%d] type: %v config:[%T] %v", outputIdx, outputType, outputConfigI, outputConfigI)
+			log.Info().Msgf("output[%d] type: %v config:[%T] %v", outputIdx, outputType, outputConfigI, outputConfigI)
 			outputConfig := outputConfigI.(map[string]any)
 			outputPlugin, err := GetOutput(outputType, outputConfig)
 			if err != nil {

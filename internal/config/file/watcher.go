@@ -3,8 +3,8 @@ package file
 import (
 	"context"
 	"github.com/fsnotify/fsnotify"
+	"github.com/rs/zerolog/log"
 	"github.com/zhaogogo/go-logfilter/internal/config"
-	"k8s.io/klog/v2"
 )
 
 var _ config.Watcher = (*watcher)(nil)
@@ -39,7 +39,7 @@ func (w *watcher) Next() ([]*config.KeyValue, error) {
 	case <-w.ctx.Done():
 		return nil, w.ctx.Err()
 	case event := <-w.fw.Events:
-		klog.V(1).Infof("fsnotify get event %v", event.String())
+		log.Info().Msgf("fsnotify get event %v", event.String())
 		//if event.Op == fsnotify.Rename {
 		//	if _, err := os.Stat(event.Name); err == nil || os.IsExist(err) {
 		//		if err := w.fw.Add(event.Name); err != nil {
