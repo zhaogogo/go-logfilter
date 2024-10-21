@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"sync"
 )
 
 type Input interface {
@@ -43,16 +42,16 @@ type Inputs struct {
 }
 
 func (i *Inputs) Start() {
-	wg := sync.WaitGroup{}
-	// 所有inputs开始读取事件
+	//wg := sync.WaitGroup{}
+	//// 所有inputs开始读取事件
 	for _, input := range i.inputCell {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			input.Start()
-		}()
+		//	wg.Add(1)
+		//	go func() {
+		//		defer wg.Done()
+		input.Start()
+		//	}()
 	}
-	wg.Wait()
+	//wg.Wait()
 }
 
 func (i *Inputs) Stop() {
