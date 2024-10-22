@@ -16,3 +16,5 @@ filters:
 outputs:
   - stdout:
       codec: json
+      if:
+        - EQ(message, "a")

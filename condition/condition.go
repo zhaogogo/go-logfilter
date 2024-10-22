@@ -1,28 +1,25 @@
 package condition
 
-type Condition interface {
-	Pass(event map[string]interface{}) bool
-}
+import (
+	"github.com/rs/zerolog/log"
+	"regexp"
+	"strings"
+)
 
-type Conditioner struct {
-	conditions []Condition
-}
+func NewCondition(c string) Condition {
+	original_c := c
 
-func NewConditioner(config map[string]any) *Conditioner {
-	f := &Conditioner{}
-	// TODO
-	return f
-}
+	c = strings.Trim(c, " ")
 
-func (f *Conditioner) Pass(event map[string]interface{}) bool {
-	if f.conditions == nil {
-		return true
+	if matched, _ := regexp.MatchString(`^{{.*}}$`, c); matched {
+		return NewTemplateCondition(c)
 	}
 
-	for _, c := range f.conditions {
-		if !c.Pass(event) {
-			return false
-		}
+	if root, err := parseBoolTree(c); err != nil {
+		log.Panic().Msgf("could not build Condition from `%s` : %s", original_c, err)
+		return nil
+	} else {
+		return root
 	}
-	return true
+
 }
