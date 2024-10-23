@@ -1,11 +1,11 @@
 package inputs
 
 import (
-	"encoding/json"
 	"fmt"
+	"sync"
+
 	"github.com/pkg/errors"
 	"github.com/zhaogogo/go-logfilter/core"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
@@ -111,9 +111,9 @@ func (i *InputCell) start(goid int) {
 		for fs, v := range i.addFields {
 			event = fs.SetField(event, v.Render(event), "", false)
 		}
-
-		v, _ := json.Marshal(event)
-		fmt.Printf("res: [%v] %v\n", goid, string(v))
+		log.Debug().Any("event", event).Msg("ReadEvent成功")
+		// v, _ := json.Marshal(event)
+		// fmt.Printf("res: [%v] %v\n", goid, string(v))
 		i.process.Process(event)
 	}
 	log.Info().Msgf("[%v]input cell %v read event stop, len: %v", goid, i.name, len(eventCh))

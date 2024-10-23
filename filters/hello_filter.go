@@ -1,7 +1,6 @@
 package filters
 
 import (
-	"fmt"
 	"github.com/zhaogogo/go-logfilter/core"
 )
 
@@ -24,10 +23,6 @@ func newHelloFilter(config map[string]interface{}) core.Processer {
 }
 
 func (p *HelloFilter) Process(event map[string]any) map[string]any {
-	if p.echo != "" {
-		fmt.Println(p.echo)
-	} else {
-		fmt.Println("hello filter")
-	}
+	event["echo"] = p.echo
 	return event
 }
