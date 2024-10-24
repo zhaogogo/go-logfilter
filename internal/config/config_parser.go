@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"github.com/zhaogogo/go-logfilter/encoding"
+	"github.com/zhaogogo/go-logfilter/pkg/encoding"
 	"gopkg.in/yaml.v3"
 )
 

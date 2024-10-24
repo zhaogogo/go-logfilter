@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"github.com/zhaogogo/go-logfilter/field"
+	"github.com/zhaogogo/go-logfilter/pkg/field"
 	"math"
 	"reflect"
 	"strconv"
@@ -208,10 +208,10 @@ func (plugin *DateFilter) Filter(event map[string]interface{}) (map[string]inter
 			if plugin.targetFormat != "" {
 				timeText := t.Format(plugin.targetFormat)
 				fmt.Printf("解析时间：%s\n", timeText)
-				event = plugin.targetFS.SetField(event, timeText, "", plugin.overwrite)
+				event = plugin.targetFS.SetField(event, timeText, plugin.overwrite)
 				return event, true
 			}
-			event = plugin.targetFS.SetField(event, t, "", plugin.overwrite)
+			event = plugin.targetFS.SetField(event, t, plugin.overwrite)
 			return event, true
 		}
 	}

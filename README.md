@@ -1,6 +1,13 @@
 # go-logfilter
 
+# 添加字段
+
+inputs、filters、outputs块都可配置add_fields字段
+
+
+
 # 条件判断
+
 if条件判断仅支持`filters plugin`块和`outputs plugin`块。如下示例
 - template 条件 -->         {{if .name}}y{{end}}
 - 自己实现的一套简单的DSL --> Exist(a) && (!Exist(b) || !Exist(c))

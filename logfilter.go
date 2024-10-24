@@ -59,7 +59,7 @@ func init() {
 	flag.BoolVar(&appOpts.ExitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
 
 	flag.StringVar(&logpath, "log", "", "日志文件")
-	flag.IntVar(&appOpts.Worker, "worker", runtime.GOMAXPROCS(0), "worker thread count")
+	flag.IntVar(&appOpts.Worker, "worker", 1, "worker thread count")
 	// klog.InitFlags(nil)
 
 }
@@ -107,7 +107,7 @@ func main() {
 			log.Info().Msgf("gologfilter prometheus and pprof listen: %s", appOpts.Prometheus)
 			err := http.ListenAndServe(appOpts.Prometheus, nil)
 			if err != nil {
-				log.Info().Msgf("%w", err)
+				log.Panic().Err(err)
 			}
 		}()
 	}
@@ -121,7 +121,7 @@ func main() {
 		file.NewSource(appOpts.Config),
 	)
 	if err != nil {
-		log.Info().Msgf("加载配置文件失败", err)
+		log.Panic().Err(err).Msg("加载配置文件失败")
 	}
 	process, err := process.NewProcess(ctx, appOpts, conf)
 	if err != nil {

@@ -6,12 +6,12 @@ inputs:
         subsystem: ""
         name: "logfilter_stdin"
       add_fields:
-        "[x1][x2]": 123
+        "[x1][x2]": [1,2,3]
       threads: 3
       timestamp: timestamp
 filters:
   - hello:
-      echo: hello
+      echo: ["echo", 9]
 
 outputs:
   - stdout:

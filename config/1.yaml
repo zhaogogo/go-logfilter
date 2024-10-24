@@ -5,5 +5,5 @@
 #      codec: json
 filters:
   - hello:
-      echo: "xxx"
+      echo: ["a", 1]
 #  - Test2: {}
