@@ -9,7 +9,6 @@ import (
 
 type Output interface {
 	Emit(map[string]interface{})
-	Shutdown()
 }
 
 type BuildOutputFunc func(map[string]interface{}) Output

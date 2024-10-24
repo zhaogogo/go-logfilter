@@ -9,6 +9,7 @@ import (
 	"github.com/zhaogogo/go-logfilter/inputs"
 	"github.com/zhaogogo/go-logfilter/internal/config"
 	"github.com/zhaogogo/go-logfilter/outputs"
+	"sync"
 )
 
 const (
@@ -48,7 +49,6 @@ func NewProcess(ctx context.Context, appConfig config.AppConfig, conf map[string
 	if filterConfs, ok := conf[FILTER]; ok {
 		if filterConfs == nil || len(filterConfs) == 0 {
 		} else {
-			fmt.Println("--->", filterConfs)
 			filterBox, err := filters.NewFilters(filterConfs)
 			if err != nil {
 				return nil, errors.New(fmt.Sprintf("创建Filter失败, filter配置: %#v", filterConfs))
@@ -74,7 +74,16 @@ func NewProcess(ctx context.Context, appConfig config.AppConfig, conf map[string
 }
 
 func (p *Process) Start() {
-	p.Inputs.Start()
+	wg := sync.WaitGroup{}
+	for i := 0; i < p.appConfig.Worker; i++ {
+		wg.Add(1)
+		go func(gid int) {
+			defer wg.Done()
+			p.Inputs.Start(gid)
+		}(i)
+	}
+	wg.Wait()
+
 }
 
 func (p *Process) Shutdown() {

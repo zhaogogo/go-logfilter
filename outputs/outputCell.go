@@ -47,6 +47,3 @@ type OutputCell struct {
 func (o *OutputCell) Emit(event map[string]interface{}) {
 	o.output.Emit(event)
 }
-func (o *OutputCell) Shutdown() {
-	//TODO
-}

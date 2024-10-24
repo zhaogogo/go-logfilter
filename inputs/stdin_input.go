@@ -53,8 +53,9 @@ func newStdinInput(config map[string]interface{}) Input {
 }
 
 func (p *StdinInput) ReadEvent() chan map[string]interface{} {
-
-	go p.read()
+	p.one.Do(func() {
+		go p.read()
+	})
 
 	return p.fifo
 }

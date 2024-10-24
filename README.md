@@ -1,6 +1,6 @@
 # go-logfilter
 
-## if
+# 条件判断
 if条件判断仅支持`filters plugin`块和`outputs plugin`块。如下示例
 - template 条件 -->         {{if .name}}y{{end}}
 - 自己实现的一套简单的DSL --> Exist(a) && (!Exist(b) || !Exist(c))
@@ -55,3 +55,39 @@ Random(20) 1/20 的概率返回 true
 Before(24h) @timestamp 字段存在, 并且是 time.Time 类型, 并且在当前时间+24小时之前
 After(-24h) @timestamp 字段存在, 并且是 time.Time 类型, 并且在当前时间-24小时之后
 ```
+
+# Filter
+
+## Filter插件通用配置
+
+### if条件判断
+
+详细见条件判断
+
+```yaml
+filters:
+  Drop:
+    if:
+    - 'EQ(name,"childe")'
+    - 'Before(-24h) || After(24h)'
+```
+
+### add_fields
+
+当Filter执行成功时, 可以添加一些字段. 如果Filter失败, 则忽略. 下面具体的Filter说明中, 提到的"返回false", 就是指Filter失败
+
+```yaml
+filters:
+- Grok:
+    src: message
+    match:
+    - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
+    - '^(?P<logtime>\S+) (?P<status>\d+) (?P<loglevel>\w+)$'
+    remove_fields: ['message']
+    add_fields:
+	    grok_result: 'ok'
+```
+
+### remove_fields
+
+例子如上. 当Filter执行成功时, 可以删除一些字段. 如果Filter失败, 则忽略.

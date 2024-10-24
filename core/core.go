@@ -16,3 +16,12 @@ func (p *ProcesserNode) Process(in map[string]interface{}) map[string]interface{
 	}
 	return pin
 }
+
+type Process = []Processer
+
+func (p *Process) Process(in map[string]interface{}) map[string]interface{} {
+	for _, pr := range *p {
+		in = pr.Process(in)
+	}
+	return in
+}

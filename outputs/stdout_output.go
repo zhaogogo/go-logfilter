@@ -34,9 +34,7 @@ func (p *StdoutOutput) Emit(event map[string]interface{}) {
 	buf, err := p.encoder.Encode(event)
 	if err != nil {
 		log.Error().Msgf("marshal %v error:%s", event, err)
-
+		return
 	}
-	fmt.Println("xxxxx", string(buf))
+	fmt.Println(string(buf))
 }
-
-func (p *StdoutOutput) Shutdown() {}

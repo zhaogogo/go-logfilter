@@ -41,7 +41,7 @@ var appOpts = config.AppConfig{
 	Version:     false,
 	Prometheus:  "",
 	ExitWhenNil: false,
-	//Worker:      1,
+	Worker:      1,
 }
 
 func init() {
@@ -59,7 +59,7 @@ func init() {
 	flag.BoolVar(&appOpts.ExitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
 
 	flag.StringVar(&logpath, "log", "", "日志文件")
-	//flag.IntVar(&appOpts.Worker, "worker", 1, "worker thread count")
+	flag.IntVar(&appOpts.Worker, "worker", runtime.GOMAXPROCS(0), "worker thread count")
 	// klog.InitFlags(nil)
 
 }

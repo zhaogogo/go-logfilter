@@ -1,47 +1,58 @@
 package filters
 
 import (
-	"fmt"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"github.com/zhaogogo/go-logfilter/condition"
+	"github.com/zhaogogo/go-logfilter/core"
+	"github.com/zhaogogo/go-logfilter/field"
 )
 
-func NewFilters(filterConfig []any) (*Filters, error) {
-	filters := &Filters{
-		config: filterConfig,
+func NewFilterCell(filterType string, filter core.Processer, cellConfig map[string]interface{}) (*FilterCell, error) {
+	f := &FilterCell{
+		name:        filterType,
+		filter:      filter,
+		config:      cellConfig,
+		Conditioner: condition.NewConditioner(cellConfig),
 	}
-	for filterIdx, filterC := range filterConfig {
-		c := filterC.(map[string]interface{})
-		for filterType, filterConfigI := range c {
-			log.Info().Msgf("filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
-			filterConfig := filterConfigI.(map[string]any)
-			filterPlugin, err := GetFilter(filterType, filterConfig)
-			if err != nil {
-				return nil, errors.Wrapf(err, "filter插件不可用, filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
+	//p, err := metrics.NewPrometheusCounter(cellConfig)
+	//if err != nil {
+	//	log.Fatal().Err(err)
+	//}
+	//f.prometheusCounter = p
+	if add_fields, ok := cellConfig["add_fields"]; ok && add_fields != nil {
+		f.addFields = make(map[field.FieldSetter]field.ValueRender)
+		for k, v := range add_fields.(map[string]interface{}) {
+			fieldSetter := field.NewFieldSetter(k)
+			if fieldSetter == nil {
+				log.Fatal().Msgf("filter fieldSetter构建失败", k)
 			}
-			filterCell, err := NewFilterCell(fmt.Sprintf("%s[%v]", filterType, filterIdx), filterPlugin, filterConfig)
-			if err != nil {
-				return nil, errors.Wrapf(err, "filterCell创建失败input[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
-			}
-			filters.filterCells = append(filters.filterCells, filterCell)
+			f.addFields[fieldSetter] = field.GetValueRender(v)
 		}
+	} else {
+		f.addFields = nil
 	}
-	return filters, nil
+
+	return f, nil
 }
 
-type Filters struct {
-	config      []any
-	filterCells []*FilterCell
+type FilterCell struct {
+	name   string
+	filter core.Processer
+	config map[string]interface{}
+	//prometheusCounter prometheus.Counter
+	exit func()
+
+	addFields map[field.FieldSetter]field.ValueRender
+	*condition.Conditioner
 }
 
-func (f *Filters) Process(event map[string]interface{}) map[string]interface{} {
-	for _, filter := range f.filterCells {
-		if filter.Pass(event) {
-			if filter.prometheusCounter != nil {
-				filter.prometheusCounter.Inc()
-			}
-			event = filter.Process(event)
+func (f *FilterCell) Process(event map[string]interface{}) map[string]interface{} {
+	if f.Conditioner.Pass(event) {
+		event = f.filter.Process(event)
+		for fs, v := range f.addFields {
+			event = fs.SetField(event, v.Render(event), "", false)
 		}
 	}
+
 	return event
 }
