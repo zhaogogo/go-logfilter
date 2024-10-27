@@ -6,7 +6,7 @@ var _ Condition = &TemplateCondition{}
 
 func NewTemplateCondition(c string) *TemplateCondition {
 	return &TemplateCondition{
-		ifCondition: field.GetValueRender(c),
+		ifCondition: field.GetValueRender(c, true),
 		ifResult:    "y",
 	}
 }

@@ -2,6 +2,8 @@ package filters
 
 import (
 	"fmt"
+	"github.com/zhaogogo/go-logfilter/core/process/filters/convert"
+	"github.com/zhaogogo/go-logfilter/core/process/filters/grok"
 	"github.com/zhaogogo/go-logfilter/core/process/filters/hello"
 	"github.com/zhaogogo/go-logfilter/core/topology"
 	"plugin"
@@ -12,22 +14,25 @@ import (
 
 func init() {
 	Register("hello", hello.New)
+	Register("convert", convert.New)
+	Register("grok", grok.New)
+	Register("filters", NewFiltersFilter)
 }
 
-type BuildFilterFunc func(map[string]interface{}) topology.Processer
+type BuildFilterFunc func(map[string]interface{}) topology.Filter
 
-var registeredInput map[string]BuildFilterFunc = make(map[string]BuildFilterFunc)
+var registeredFilter map[string]BuildFilterFunc = make(map[string]BuildFilterFunc)
 
 func Register(filterType string, buildFn BuildFilterFunc) {
-	if _, ok := registeredInput[filterType]; ok {
+	if _, ok := registeredFilter[filterType]; ok {
 		log.Panic().Msgf("filter类型%s已经被注册了", filterType)
 	}
-	registeredInput[filterType] = buildFn
+	registeredFilter[filterType] = buildFn
 }
 
 // 获取Filter类型
-func GetFilter(filterType string, config map[string]interface{}) (topology.Processer, error) {
-	if v, ok := registeredInput[filterType]; ok {
+func GetFilter(filterType string, config map[string]interface{}) (topology.Filter, error) {
+	if v, ok := registeredFilter[filterType]; ok {
 		return v(config), nil
 	}
 	log.Info().Msgf("filter内置插件[%v]未注册, 尝试加载三方插件", filterType)
@@ -40,7 +45,7 @@ func GetFilter(filterType string, config map[string]interface{}) (topology.Proce
 	return filter, nil
 }
 
-func getFilterFromPlugin(pluginPath string, config map[string]interface{}) (topology.Processer, error) {
+func getFilterFromPlugin(pluginPath string, config map[string]interface{}) (topology.Filter, error) {
 	p, err := plugin.Open(pluginPath)
 	if err != nil {
 		return nil, err
@@ -54,7 +59,7 @@ func getFilterFromPlugin(pluginPath string, config map[string]interface{}) (topo
 		return nil, fmt.Errorf("New函数签名错误")
 	}
 	rst := f(config)
-	input, ok := rst.(topology.Processer)
+	input, ok := rst.(topology.Filter)
 	if !ok {
 		return nil, fmt.Errorf("filter未实现Process方法, got: %T", rst)
 	}

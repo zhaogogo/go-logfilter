@@ -9,7 +9,7 @@ type HelloFilter struct {
 	value interface{}
 }
 
-func New(config map[string]interface{}) topology.Processer {
+func New(config map[string]interface{}) topology.Filter {
 	p := &HelloFilter{}
 	if v, ok := config["echo"]; ok {
 		echo := v.([]interface{})
@@ -23,7 +23,7 @@ func New(config map[string]interface{}) topology.Processer {
 	return p
 }
 
-func (p *HelloFilter) Process(event map[string]any) map[string]any {
+func (p *HelloFilter) Filter(event map[string]any) (map[string]any, error) {
 	event[p.key] = p.value
-	return event
+	return event, nil
 }

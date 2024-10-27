@@ -9,14 +9,29 @@ import (
 	"github.com/zhaogogo/go-logfilter/pkg/metrics"
 )
 
-func NewInputer(inputType string, input topology.Input, cellConfig map[string]interface{}, process topology.Processer) (*Inputer, error) {
+func NewInputer(inputType string, input topology.Input, cellConfig map[string]interface{}, process topology.Process) (*Inputer, error) {
+	var failedtag bool = false
+	failedtagAny, ok := cellConfig["failed_tag"]
+	if ok {
+		if failedtagBool, ok := failedtagAny.(bool); ok {
+			failedtag = failedtagBool
+		}
+
+	}
+	var overwrite bool = false
+	overwriteAny, ok := cellConfig["overwrite"]
+	if ok {
+		if overwriteBool, ok := overwriteAny.(bool); ok {
+			failedtag = overwriteBool
+		}
+	}
 	i := &Inputer{
-		input:  input,
-		name:   inputType,
-		config: cellConfig,
-		//stop:         false,
+		input:        input,
+		name:         inputType,
+		config:       cellConfig,
 		shutdownChan: make(chan struct{}, 1),
-		addFields:    field.NewAddFields(cellConfig),
+		addFields:    field.NewAddFields(cellConfig, failedtag),
+		overwrite:    overwrite,
 	}
 
 	if process == nil {
@@ -40,10 +55,12 @@ type Inputer struct {
 	shutdownChan      chan struct{}
 	shutdownWhenNil   bool
 	prometheusCounter prometheus.Counter
-	process           topology.Processer
+	process           topology.Process
 	//exit              func()
 
-	addFields map[field.FieldSetter]field.ValueRender
+	addFields    []map[field.FieldSetter]field.ValueRender
+	overwrite    bool
+	addFailedTag bool
 }
 
 func (i *Inputer) SetShutdownWhenNil(shutdownWhenNil bool) {
@@ -75,8 +92,10 @@ func (i *Inputer) start(goid int) {
 				continue
 			}
 		}
-		for fs, v := range i.addFields {
-			event = fs.SetField(event, v.Render(event), false)
+		for _, fs := range i.addFields {
+			for fieldsetter, valuerender := range fs {
+				event = fieldsetter.SetField(event, valuerender.Render(event), i.overwrite)
+			}
 		}
 		log.Debug().Any("event", event).Msgf("[%v]ReadEvent成功", goid)
 		// v, _ := json.Marshal(event)

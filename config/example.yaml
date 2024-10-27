@@ -1,20 +1,86 @@
 inputs:
   - stdin:
-      codec: json
       prometheus_counter:
         namespace: ""
         subsystem: ""
         name: "logfilter_stdin"
       add_fields:
-        "[x1][x2]": [1,2,3]
-      threads: 3
-      timestamp: timestamp
+        # key添加
+        - "[x1][x2]": [1,2,3]               # 多级添加,value为interface支持golang多种数据类型
+          "a_key": "100"                # 字面量添加
+#        # value
+        - "jsonpath_test1": "$.message"
+        - "jsonpath_test2": "$.messagexxx"   # 如果jsonpath返回值为空，不添加value
+        - "[][]test1": "[x1][x2]"
+        - "[][]test2": "[a1][b1]"           # 如果[a1][b1]返回值为空，不添加value
+        - "[c1][c2]": "[a2][b2]"
+        - "go_template1": "{{ timeFormat .timestamp }}"   # 使用自定义函数
+        - "go_template2": "{{ timeFormat .timestamp \"2006-01-02\"}}"   # 使用自定义函数
+        - "es_key": "aa%{x1}{x2}-%{+2006.01.02}"
+      overwrite: true  # add_fields 是否覆盖
+      failed_tag: true
+      codec: json
+      timestamp: timestamp  # timestamp_key值
 filters:
-  - hello:
-      echo: ["echo", 9]
+#  - hello:
+#      echo: ["echo", 9]
+#      add_fields:
+#        - "[abc][def]": 123
+#      delete_fields:
+#        - "jsonpath_test1"
+#        - "[][]test1"
+#        - "a"
+#        - abc
+#        - "es_key"
+#        - go_template2
+#        - "x1"
+#      overwrite: true  # add_fields 是否覆盖
+#      failed_tag: true
+#      if:
+#        - EQ(message, "a")
+#  - convert:
+#      fields:
+#        "[x1][x2]":
+#          remove_if_fail: false
+#          setto_if_nil: 0
+#          setto_if_fail: 0
+#          to: uint
+#      if:
+#        - EQ(message, "a")
+#  - grok:
+#      delete_fields: ['message']
+#      match:
+#        - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
+#        - '^(?P<logtime>\S+) (?P<status>\d+) (?P<loglevel>\w+)$'
+#        - '(?m)^(?P<first>\w+) (?P<last>\w+)$'
+#      ignore_blank: true
+#      src: message
+#      overwrite: false
+#      pattern_paths:
+#        - 'https://raw.githubusercontent.com/vjeantet/grok/master/patterns/grok-patterns'
+#        - '/opt/gohangout/patterns/'
+  - filters:
+      filter:
+        - hello:
+            echo: ["filter_filter_echo", 9]
+            add_fields:
+              - "[abc123][def123]": 123
+        - grok:
+            delete_fields: [ 'message' ]
+            match:
+              - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
+              - '^(?P<logtime>\S+) (?P<status>\d+) (?P<loglevel>\w+)$'
+              - '(?m)^(?P<first>\w+) (?P<last>\w+)$'
+            ignore_blank: true
+            src: message
+            overwrite: false
+      failed_tag: true
+      overwrite: true  # 字段是否覆盖
+      if:
+      - EQ(message, "a a")
 
 outputs:
   - stdout:
       codec: json
-      if:
-        - EQ(message, "a")
+#      if:
+#        - EQ(message, "a")

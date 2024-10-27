@@ -1,7 +1,37 @@
 package field
 
+import "github.com/zhaogogo/go-logfilter/pkg/field/set"
+
+type SetField interface {
+	SetField(event map[string]any, value any, overwrite bool) map[string]any
+}
+
 type FieldSetter interface {
-	SetField(event map[string]interface{}, value interface{}, overwrite bool) map[string]interface{}
+	SetField(event map[string]any, value interface{}, overwrite bool) map[string]any
+	Name() string
+}
+
+type FieldSet struct {
+	name        string
+	fieldsetter SetField
+}
+
+func (f *FieldSet) Name() string {
+	return f.name
+}
+
+func NewFieldSet(template string, fieldsetter SetField) FieldSetter {
+	return &FieldSet{
+		name:        template,
+		fieldsetter: fieldsetter,
+	}
+}
+
+func (f *FieldSet) SetField(event map[string]any, value any, overwrite bool) map[string]any {
+	if value == nil {
+		return event
+	}
+	return f.fieldsetter.SetField(event, value, overwrite)
 }
 
 func NewFieldSetter(template string) FieldSetter {
@@ -11,10 +41,10 @@ func NewFieldSetter(template string) FieldSetter {
 			fields = append(fields, v[2])
 		}
 		if len(fields) == 1 {
-			return NewOneLevelFieldSetter(fields[0])
+			return NewFieldSet(template, set.NewOneLevelFieldSetter(fields[0]))
 		}
-		return NewMultiLevelFieldSetter(fields)
+		return NewFieldSet(template, set.NewMultiLevelFieldSetter(fields))
 	} else {
-		return NewOneLevelFieldSetter(template)
+		return NewFieldSet(template, set.NewOneLevelFieldSetter(template))
 	}
 }

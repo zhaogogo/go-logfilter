@@ -1,4 +1,4 @@
-package field
+package valuerender
 
 // used for ES indexname template
 
@@ -16,13 +16,14 @@ import (
 type field struct {
 	literal  bool
 	date     bool
+	raw      string
 	value    string // used in datetime %{+} and literal
 	location *time.Location
 
 	mv *MultiLevelValueRender
 }
 
-func (f *field) render(event map[string]interface{}, location *time.Location) (string, error) {
+func (f *field) render(event map[string]interface{}, location *time.Location) (interface{}, error) {
 	if f.literal {
 		return f.value, nil
 	}
@@ -35,10 +36,7 @@ func (f *field) render(event map[string]interface{}, location *time.Location) (s
 		}
 	}
 	v := f.mv.Render(event)
-	if v, ok := v.(string); ok {
-		return v, nil
-	}
-	return "null", nil
+	return v, nil
 }
 
 type IndexRender struct {
@@ -57,26 +55,31 @@ func getAllFields(s string) []string {
 }
 
 func NewIndexRender(t string) *IndexRender {
-	r, _ := regexp.Compile(`%({.*?})+`) ////%{+YYYY.MM.dd}
+	r, _ := regexp.Compile(`%({.*?})+`) //%{+YYYY.MM.dd}
 	fields := make([]*field, 0)
 	lastPos := 0
 	for _, loc := range r.FindAllStringIndex(t, -1) {
 		s, e := loc[0], loc[1]
-		fields = append(fields, &field{
-			literal: true,
-			value:   t[lastPos:s],
-		})
+		if lastPos != s {
+			fields = append(fields, &field{
+				literal: true,
+				raw:     t[lastPos:s],
+				value:   t[lastPos:s],
+			})
+		}
 
 		if t[s+2] == '+' {
 			fields = append(fields, &field{
 				literal: false,
 				date:    true,
+				raw:     t[s:e],
 				value:   t[s+3 : e-1],
 			})
 		} else {
 			fields = append(fields, &field{
 				literal: false,
 				date:    false,
+				raw:     t[s:e],
 				mv:      NewMultiLevelValueRender(getAllFields(t[s+1 : e])),
 			})
 		}
@@ -88,6 +91,7 @@ func NewIndexRender(t string) *IndexRender {
 		fields = append(fields, &field{
 			literal: true,
 			date:    false,
+			raw:     t[lastPos:],
 			value:   t[lastPos:],
 		})
 	}
@@ -137,9 +141,16 @@ func (r *IndexRender) Render(event map[string]interface{}) interface{} {
 	fields := make([]string, len(r.fields))
 	for i, f := range r.fields {
 		if v, err := f.render(event, r.location); err != nil {
-			return "null"
+			log.Err(err).Msgf("esIndex render failed")
+			fields[i] = f.value
 		} else {
-			fields[i] = v
+			res, ok := v.(string)
+			if !ok {
+				log.Error().Msgf("esIndex render asset failed, got: %T  %#v", v, v)
+				fields[i] = f.raw
+			} else {
+				fields[i] = res
+			}
 		}
 	}
 	return strings.Join(fields, "")

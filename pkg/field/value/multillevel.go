@@ -1,4 +1,4 @@
-package field
+package valuerender
 
 type MultiLevelValueRender struct {
 	preFields []string
@@ -20,11 +20,11 @@ func NewMultiLevelValueRender(fields []string) *MultiLevelValueRender {
 }
 
 // Render implements ValueRender
-func (vr *MultiLevelValueRender) Render(event map[string]interface{}) interface{} {
+func (l *MultiLevelValueRender) Render(event map[string]interface{}) interface{} {
 	var current map[string]interface{} = event
 	var value interface{}
 	var ok bool
-	for _, field := range vr.preFields {
+	for _, field := range l.preFields {
 		value, ok = current[field]
 		if !ok || value == nil {
 			return nil
@@ -33,7 +33,7 @@ func (vr *MultiLevelValueRender) Render(event map[string]interface{}) interface{
 			return nil
 		}
 	}
-	if value, ok := current[vr.lastField]; ok {
+	if value, ok := current[l.lastField]; ok {
 		return value
 	}
 	return nil

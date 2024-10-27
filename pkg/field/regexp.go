@@ -8,4 +8,6 @@ var (
 	matchGoTemp  = regexp.MustCompile(`{{.*}}`)
 	matchESIndex = regexp.MustCompile(`%{.*?}`) //%{+YYYY.MM.dd}
 	jsonPath     = regexp.MustCompile(`^\$\.`)
+
+	FailedTagKey = "failed_tag"
 )

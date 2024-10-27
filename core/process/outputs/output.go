@@ -10,12 +10,27 @@ import (
 )
 
 func NewOutputer(outputType string, output topology.Output, cellConfig map[string]interface{}) (*Outputer, error) {
+	var failedtag bool = false
+	failedtagAny, ok := cellConfig["failed_tag"]
+	if ok {
+		if failedtagBool, ok := failedtagAny.(bool); ok {
+			failedtag = failedtagBool
+		}
+	}
+	var overwrite bool = false
+	overwriteAny, ok := cellConfig["overwrite"]
+	if ok {
+		if overwriteBool, ok := overwriteAny.(bool); ok {
+			failedtag = overwriteBool
+		}
+	}
 	o := &Outputer{
 		output:      output,
 		name:        outputType,
 		config:      cellConfig,
 		Conditioner: condition.NewConditioner(cellConfig),
-		addFields:   field.NewAddFields(cellConfig),
+		addFields:   field.NewAddFields(cellConfig, failedtag),
+		overwrite:   overwrite,
 	}
 	p, err := metrics.NewPrometheusCounter(cellConfig)
 	if err != nil {
@@ -33,14 +48,17 @@ type Outputer struct {
 	exit              func()
 	*condition.Conditioner
 
-	addFields map[field.FieldSetter]field.ValueRender
+	overwrite bool
+	addFields []map[field.FieldSetter]field.ValueRender
 }
 
 func (o *Outputer) Emit(event map[string]interface{}) {
-	if o.addFields != nil {
-		for fs, v := range o.addFields {
-			event = fs.SetField(event, v.Render(event), false)
+
+	for _, fs := range o.addFields {
+		for fieldsetter, valuerender := range fs {
+			event = fieldsetter.SetField(event, valuerender.Render(event), o.overwrite)
 		}
 	}
+
 	o.output.Emit(event)
 }

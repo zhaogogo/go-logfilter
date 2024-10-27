@@ -18,18 +18,18 @@ const (
 	OUTPUT = "outputs"
 )
 
-type Process struct {
+type Processer struct {
 	ctx       context.Context
 	appConfig config.AppConfig
 	Inputs    *inputs.Inputs
-	processer *Processer
+	processer *Processs
 }
 
-func NewProcess(ctx context.Context, appConfig config.AppConfig, conf map[string][]interface{}) (*Process, error) {
-	p := &Process{
+func NewProcess(ctx context.Context, appConfig config.AppConfig, conf map[string][]interface{}) (*Processer, error) {
+	p := &Processer{
 		ctx:       ctx,
 		appConfig: appConfig,
-		processer: new(Processer),
+		processer: new(Processs),
 	}
 	if filterConfs, ok := conf[FILTER]; ok {
 		if filterConfs == nil || len(filterConfs) == 0 {
@@ -71,7 +71,7 @@ func NewProcess(ctx context.Context, appConfig config.AppConfig, conf map[string
 	return p, nil
 }
 
-func (p *Process) Start() {
+func (p *Processer) Start() {
 	wg := sync.WaitGroup{}
 	for i := 0; i < p.appConfig.Worker; i++ {
 		wg.Add(1)
@@ -84,34 +84,34 @@ func (p *Process) Start() {
 
 }
 
-func (p *Process) Shutdown() {
+func (p *Processer) Shutdown() {
 	p.Inputs.Stop()
 }
 
 type ProcesserNode struct {
-	Processor topology.Processer
+	Processer topology.Process
 	Next      *ProcesserNode
 }
 
 func (p *ProcesserNode) Process(in map[string]interface{}) map[string]interface{} {
-	pin := p.Processor.Process(in)
+	pin := p.Processer.Process(in)
 	if p.Next != nil {
-		pin = p.Next.Processor.Process(pin)
+		pin = p.Next.Processer.Process(pin)
 	}
 	return pin
 }
 
-type Processer struct {
-	process []topology.Processer
+type Processs struct {
+	process []topology.Process
 }
 
-func (p *Processer) Process(in map[string]interface{}) map[string]interface{} {
+func (p *Processs) Process(in map[string]interface{}) map[string]interface{} {
 	for _, pr := range p.process {
 		in = pr.Process(in)
 	}
 	return in
 }
 
-func (p *Processer) Add(pr topology.Processer) {
+func (p *Processs) Add(pr topology.Process) {
 	p.process = append(p.process, pr)
 }

@@ -1,4 +1,4 @@
-package field
+package set
 
 import "reflect"
 
@@ -21,6 +21,9 @@ func NewMultiLevelFieldSetter(fields []string) *MultiLevelFieldSetter {
 }
 
 func (fs *MultiLevelFieldSetter) SetField(event map[string]interface{}, value interface{}, overwrite bool) map[string]interface{} {
+	if value == nil {
+		return event
+	}
 	current := event
 	for _, field := range fs.preFields {
 		if value, ok := current[field]; ok {

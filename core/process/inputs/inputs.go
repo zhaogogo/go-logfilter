@@ -8,7 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func NewInputs(inputsConf []any, process topology.Processer) (inputs *Inputs, err error) {
+func NewInputs(inputsConf []any, process topology.Process) (inputs *Inputs, err error) {
 	inputs = &Inputs{
 		config: inputsConf,
 	}

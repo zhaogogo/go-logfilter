@@ -5,7 +5,11 @@ type Input interface {
 	Shutdown()
 }
 
-type Processer interface {
+type Filter interface {
+	Filter(map[string]interface{}) (map[string]interface{}, error)
+}
+
+type Process interface {
 	Process(map[string]interface{}) map[string]interface{}
 }
 

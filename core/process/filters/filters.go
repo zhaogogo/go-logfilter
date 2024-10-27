@@ -11,10 +11,17 @@ func NewFilters(filterConfig []any) (*Filters, error) {
 		config: filterConfig,
 	}
 	for filterIdx, filterC := range filterConfig {
-		c := filterC.(map[string]interface{})
+		c, ok := filterC.(map[string]interface{})
+		if !ok {
+			log.Fatal().Msgf("filters asset failed, got: %T, %#v", filterC, filterC)
+		}
 		for filterType, filterConfigI := range c {
+
 			log.Info().Msgf("filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
-			filterConfig := filterConfigI.(map[string]any)
+			filterConfig, ok := filterConfigI.(map[string]any)
+			if !ok {
+				log.Fatal().Msgf("filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
+			}
 			filterplugin, err := GetFilter(filterType, filterConfig)
 			if err != nil {
 				return nil, errors.Wrapf(err, "filter插件不可用 filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)

@@ -1,4 +1,4 @@
-package field
+package valuerender
 
 import (
 	"bytes"
@@ -13,10 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type TemplateValueRender struct {
-	tmpl *template.Template
-}
-
 var GOHANGOUT_TYPE_UNKNOWN_ERROR error = errors.New("field type unknown, it must be of json.Number|Int64|Int|int8")
 
 var ErrNotFloat64 error = errors.New("Only float64 type value could be calculated")
@@ -24,18 +20,18 @@ var ErrNotInt64 error = errors.New("Only int64 type value could be calculated")
 
 var funcMap = template.FuncMap{}
 
-func convertToInt(x interface{}) (int, error) {
-	if reflect.TypeOf(x).String() == "json.Number" {
-		b, _ := x.(json.Number).Int64()
-		return int(b), nil
-	} else if reflect.TypeOf(x).Kind() == reflect.Int64 {
-		return int(x.(int64)), nil
-	} else if reflect.TypeOf(x).Kind() == reflect.Int {
-		return x.(int), nil
-	} else if reflect.TypeOf(x).Kind() == reflect.Int8 {
-		return int(x.(int8)), nil
+type TemplateValueRender struct {
+	tmpl *template.Template
+}
+
+func NewTemplateValueRender(t string) *TemplateValueRender {
+	tmpl, err := template.New(t).Funcs(funcMap).Parse(t)
+	if err != nil {
+		log.Fatal().Msgf("could not parse template %s:%s", t, err)
 	}
-	return 0, GOHANGOUT_TYPE_UNKNOWN_ERROR
+	return &TemplateValueRender{
+		tmpl: tmpl,
+	}
 }
 
 func init() {
@@ -137,21 +133,30 @@ func init() {
 	}
 }
 
-func NewTemplateValueRender(t string) *TemplateValueRender {
-	tmpl, err := template.New(t).Funcs(funcMap).Parse(t)
-	if err != nil {
-		log.Fatal().Msgf("could not parse template %s:%s", t, err)
-	}
-	return &TemplateValueRender{
-		tmpl: tmpl,
-	}
-}
-
 // always return string
 func (r *TemplateValueRender) Render(event map[string]interface{}) interface{} {
 	b := bytes.NewBuffer(nil)
-	if r.tmpl.Execute(b, event) != nil {
+	if err := r.tmpl.Execute(b, event); err != nil {
+		log.Warn().Err(err).Msgf("go template exec failed")
 		return nil
 	}
-	return b.String()
+	res := b.String()
+	if res == "" {
+		return nil
+	}
+	return res
+}
+
+func convertToInt(x interface{}) (int, error) {
+	if reflect.TypeOf(x).String() == "json.Number" {
+		b, _ := x.(json.Number).Int64()
+		return int(b), nil
+	} else if reflect.TypeOf(x).Kind() == reflect.Int64 {
+		return int(x.(int64)), nil
+	} else if reflect.TypeOf(x).Kind() == reflect.Int {
+		return x.(int), nil
+	} else if reflect.TypeOf(x).Kind() == reflect.Int8 {
+		return int(x.(int8)), nil
+	}
+	return 0, GOHANGOUT_TYPE_UNKNOWN_ERROR
 }

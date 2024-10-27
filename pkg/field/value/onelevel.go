@@ -1,4 +1,4 @@
-package field
+package valuerender
 
 type OneLevelValueRender struct {
 	field string
@@ -10,8 +10,8 @@ func NewOneLevelValueRender(template string) *OneLevelValueRender {
 	}
 }
 
-func (vr *OneLevelValueRender) Render(event map[string]interface{}) interface{} {
-	if value, ok := event[vr.field]; ok {
+func (l *OneLevelValueRender) Render(event map[string]interface{}) interface{} {
+	if value, ok := event[l.field]; ok {
 		return value
 	}
 	return nil
