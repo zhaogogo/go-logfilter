@@ -102,5 +102,5 @@ func (i *Inputer) start(goid int) {
 		// fmt.Printf("res: [%v] %v\n", goid, string(v))
 		i.process.Process(event)
 	}
-	log.Debug().Msgf("[%v]input cell %v read event stop, len: %v", goid, i.name, len(eventCh))
+	log.Info().Msgf("[%v]input cell %v read event stop, len: %v", goid, i.name, len(eventCh))
 }
