@@ -17,18 +17,18 @@ func NewFilters(filterConfig []any) (*Filters, error) {
 		}
 		for filterType, filterConfigI := range c {
 
-			log.Info().Msgf("filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
+			log.Info().Msgf("filters %v[%d] %v config:[%T] %v", filterType, filterIdx, filterConfigI, filterConfigI)
 			filterConfig, ok := filterConfigI.(map[string]any)
 			if !ok {
-				log.Fatal().Msgf("filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
+				log.Fatal().Msgf("filters %v[%d] config:[%T] %v", filterType, filterIdx, filterConfigI, filterConfigI)
 			}
 			filterplugin, err := GetFilter(filterType, filterConfig)
 			if err != nil {
-				return nil, errors.Wrapf(err, "filter插件不可用 filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
+				return nil, errors.Wrapf(err, "filters插件不可用 %v[%d] config:[%T] %v", filterType, filterIdx, filterConfigI, filterConfigI)
 			}
 			filter, err := NewFilter(fmt.Sprintf("%s[%v]", filterType, filterIdx), filterplugin, filterConfig)
 			if err != nil {
-				return nil, errors.Wrapf(err, "filter创建失败 filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
+				return nil, errors.Wrapf(err, "filters创建失败 %v[%d] config:[%T] %v", filterType, filterIdx, filterConfigI, filterConfigI)
 			}
 			filters.filters = append(filters.filters, filter)
 		}

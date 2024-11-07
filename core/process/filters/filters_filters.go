@@ -17,13 +17,17 @@ func (f *FiltersFilter) Filter(event map[string]interface{}) (map[string]interfa
 	return event, nil
 }
 
-func NewFiltersFilter(c map[string]any) topology.Filter {
+func NewFiltersFilters(c map[string]any) topology.Filter {
 	f := &FiltersFilter{}
 	confSlice, ok := c["filter"].([]any)
 	if !ok {
 		log.Fatal().Msgf("filters plugin config asset failed, got: %T", c)
 	}
-	filters, err := newFiltersFilter(confSlice, c["overwrite"].(bool), c["failed_tag"].(bool))
+	failedTag := false
+	if failed_tag, ok := c["failed_tag"]; ok {
+		failedTag = failed_tag.(bool)
+	}
+	filters, err := newFiltersFilters(confSlice, failedTag)
 	if err != nil {
 		panic(err)
 	}
@@ -31,22 +35,22 @@ func NewFiltersFilter(c map[string]any) topology.Filter {
 	return f
 }
 
-func newFiltersFilter(filterConfig []any, overwrite bool, failedTag bool) (*Filters, error) {
+func newFiltersFilters(filterConfig []any, failedTag bool) (*Filters, error) {
 	filters := &Filters{
 		config: filterConfig,
 	}
 	for filterIdx, filterC := range filterConfig {
 		c := filterC.(map[string]interface{})
 		for filterType, filterConfigI := range c {
-			log.Info().Msgf("filter filters plugin [%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
+			log.Info().Msgf("filter filters plugin %v[%d] config:[%T] %v", filterType, filterIdx, filterConfigI, filterConfigI)
 			filterConfig := filterConfigI.(map[string]any)
 			filterplugin, err := GetFilter(filterType, filterConfig)
 			if err != nil {
-				return nil, errors.Wrapf(err, "filters filter plugin 插件不可用 filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
+				return nil, errors.Wrapf(err, "filters filter plugin 插件不可用 %v[%d] config:[%T] %v", filterType, filterIdx, filterConfigI, filterConfigI)
 			}
 			filter, err := NewFilter(fmt.Sprintf("filters filter %s[%v]", filterType, filterIdx), filterplugin, filterConfig)
 			if err != nil {
-				return nil, errors.Wrapf(err, "filters filter创建失败 filter[%d] type: %v config:[%T] %v", filterIdx, filterType, filterConfigI, filterConfigI)
+				return nil, errors.Wrapf(err, "filters filter创建失败 %v[%d] config:[%T] %v", filterType, filterIdx, filterConfigI, filterConfigI)
 			}
 			filter.failed_tag = failedTag
 			filters.filters = append(filters.filters, filter)

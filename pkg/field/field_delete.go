@@ -16,11 +16,11 @@ type FieldDelete interface {
 	Delete(map[string]any)
 }
 
-func NewFieldDeleter(c map[string]any) []FieldDelete {
+func NewFieldDeleter(c map[string]any, pluginname string) []FieldDelete {
 
 	delconfs, ok := c["delete_fields"].([]any)
 	if !ok {
-		log.Error().Msgf("get delete_fields assets failed, got %T", c["delete_fields"])
+		log.Debug().Msgf("%s get delete_fields assets failed, got %T ignore", pluginname, c["delete_fields"])
 		return nil
 	}
 	res := make([]FieldDelete, 0, len(delconfs))
@@ -28,7 +28,7 @@ func NewFieldDeleter(c map[string]any) []FieldDelete {
 		if template, ok := delc.(string); ok {
 			res = append(res, NewFieldDel(template))
 		} else {
-			log.Warn().Msgf("获取delete字段失败, got: %T, want: string", delc)
+			log.Debug().Msgf("%s 获取delete字段失败, got: %T, want: string ignore", pluginname, delc)
 		}
 	}
 	return res

@@ -29,7 +29,7 @@ func NewFilter(filterType string, filter topology.Filter, cellConfig map[string]
 		failed_tag:   failedtag,
 		addFields:    field.NewAddFields(cellConfig, failedtag),
 		overwrite:    overwrite,
-		deleteFields: field.NewFieldDeleter(cellConfig),
+		deleteFields: field.NewFieldDeleter(cellConfig, filterType),
 		Conditioner:  condition.NewConditioner(cellConfig),
 	}
 	return f, nil

@@ -39,7 +39,7 @@ func New(c map[string]any) topology.Filter {
 			groks = append(groks, NewGrok(mValue.(string), patternPaths, ignoreBlank))
 		}
 	} else {
-		log.Fatal().Msg("grok filter plugin match field must be set")
+		log.Fatal().Msgf("grok filter plugin match field must be slience, got %T", c["match"])
 	}
 	gf := &GrokFilter{
 		config:    c,
@@ -68,11 +68,11 @@ func New(c map[string]any) topology.Filter {
 func (g *GrokFilter) Filter(event map[string]interface{}) (map[string]interface{}, error) {
 	input := g.vr.Render(event)
 	if input == nil {
-		return event, errors.New("grok filter plugin render value failed")
+		return event, errors.New("grok filter plugin field render value failed")
 	}
 	i, ok := input.(string)
 	if !ok {
-		return event, errors.New("grok filter plugin render value result is not string")
+		return event, errors.New("grok filter plugin field value result is not string")
 	}
 	for _, grok := range g.groks {
 		rst := grok.grok(i)

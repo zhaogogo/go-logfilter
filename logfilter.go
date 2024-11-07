@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/rs/zerolog"
 	"io"
 	"net/http"
 	_ "net/http/pprof"
@@ -29,6 +30,7 @@ var (
 	hostName, _ = os.Hostname()
 	pid         = os.Getpid()
 	logpath     = ""
+	logLevel    = ""
 )
 
 var appOpts = config.AppConfig{
@@ -58,13 +60,14 @@ func init() {
 
 	flag.BoolVar(&appOpts.ExitWhenNil, "exit-when-nil", false, "triger gohangout to exit when receive a nil event")
 
-	flag.StringVar(&logpath, "log", "", "日志文件")
+	flag.StringVar(&logpath, "log.path", "", "日志文件")
+	flag.StringVar(&logLevel, "log.level", "info", "日志等级[debug info warn error fatal panic absent disable]")
 	flag.IntVar(&appOpts.Worker, "worker", 1, "worker thread count")
 	// klog.InitFlags(nil)
 
 }
 
-func initLogger(logpath string) {
+func initLogger() {
 	var w io.Writer = os.Stdout
 	if logpath != "" {
 		w = &lumberjack.Logger{
@@ -75,7 +78,26 @@ func initLogger(logpath string) {
 			Compress:   false,
 		}
 	}
-	log.Logger = log.Output(w).With().CallerWithSkipFrameCount(2).Logger()
+	loglevel := zerolog.InfoLevel
+	switch logLevel {
+	case "debug":
+		loglevel = zerolog.DebugLevel
+	case "info":
+		loglevel = zerolog.InfoLevel
+	case "warn":
+		loglevel = zerolog.WarnLevel
+	case "error":
+		loglevel = zerolog.ErrorLevel
+	case "fatal":
+		loglevel = zerolog.FatalLevel
+	case "panic":
+		loglevel = zerolog.PanicLevel
+	case "absent":
+		loglevel = zerolog.NoLevel
+	case "disable":
+		loglevel = zerolog.Disabled
+	}
+	log.Logger = log.Output(w).With().CallerWithSkipFrameCount(2).Logger().Level(loglevel)
 }
 
 var (
@@ -92,7 +114,7 @@ func reload() {
 
 func main() {
 	flag.Parse()
-	initLogger(logpath)
+	initLogger()
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 	if appOpts.Version {

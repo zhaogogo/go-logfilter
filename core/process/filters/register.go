@@ -2,13 +2,13 @@ package filters
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/zhaogogo/go-logfilter/core/process/filters/convert"
 	"github.com/zhaogogo/go-logfilter/core/process/filters/grok"
 	"github.com/zhaogogo/go-logfilter/core/process/filters/hello"
 	"github.com/zhaogogo/go-logfilter/core/topology"
 	"plugin"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
 
@@ -16,7 +16,7 @@ func init() {
 	Register("hello", hello.New)
 	Register("convert", convert.New)
 	Register("grok", grok.New)
-	Register("filters", NewFiltersFilter)
+	Register("filters", NewFiltersFilters)
 }
 
 type BuildFilterFunc func(map[string]interface{}) topology.Filter
@@ -40,7 +40,7 @@ func GetFilter(filterType string, config map[string]interface{}) (topology.Filte
 	pluginPath := filterType
 	filter, err := getFilterFromPlugin(pluginPath, config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "三方插件%s", pluginPath)
+		return nil, err
 	}
 	return filter, nil
 }
@@ -52,16 +52,16 @@ func getFilterFromPlugin(pluginPath string, config map[string]interface{}) (topo
 	}
 	newFunc, err := p.Lookup("New")
 	if err != nil {
-		return nil, fmt.Errorf("没有New函数, err=%s", err)
+		return nil, errors.Wrap(err, "三方插件没有New函数")
 	}
 	f, ok := newFunc.(func(map[string]interface{}) interface{})
 	if !ok {
-		return nil, fmt.Errorf("New函数签名错误")
+		return nil, fmt.Errorf("三方New函数签名错误")
 	}
 	rst := f(config)
 	input, ok := rst.(topology.Filter)
 	if !ok {
-		return nil, fmt.Errorf("filter未实现Process方法, got: %T", rst)
+		return nil, fmt.Errorf("三方插件未实现Process方法, got: %T", rst)
 	}
 	return input, nil
 }

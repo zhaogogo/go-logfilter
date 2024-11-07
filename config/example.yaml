@@ -62,7 +62,7 @@ filters:
   - filters:
       filter:
         - hello:
-            echo: ["filter_filter_echo", 9]
+            echo: ["filter_filter_echo", {"abc":123}]
             add_fields:
               - "[abc123][def123]": 123
         - grok:
@@ -70,14 +70,13 @@ filters:
             match:
               - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
               - '^(?P<logtime>\S+) (?P<status>\d+) (?P<loglevel>\w+)$'
-              - '(?m)^(?P<first>\w+) (?P<last>\w+)$'
+              - '(?m)^(?P<first>\w+) (?P<last>\w+) (?<xx>.*)$'
             ignore_blank: true
             src: message
             overwrite: false
       failed_tag: true
-      overwrite: true  # 字段是否覆盖
-      if:
-      - EQ(message, "a a")
+#      if:
+#      - EQ(message, "a a")
 
 outputs:
   - stdout:

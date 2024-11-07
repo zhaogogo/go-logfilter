@@ -103,7 +103,7 @@ func (g *Grok) loadPatterns() {
 			g.loadPattern(file)
 		}
 	}
-	log.Info().Msgf("gork plugin logad patterns:%s", g.patterns)
+	log.Info().Msgf("gork plugin load patterns:%s", g.patterns)
 }
 
 func (g *Grok) translateMatchPattern(match string) string {
@@ -161,7 +161,7 @@ func NewGrok(match string, patternPaths []string, ignoreBlank bool) *Grok {
 	g.loadPatterns()
 
 	finalPattern := g.translateMatchPattern(match)
-	log.Info().Msgf("final pattern: %s", finalPattern)
+	log.Info().Msgf("final match pattern: %s", finalPattern)
 	p := regexp.MustCompile(finalPattern)
 	g.p = p
 

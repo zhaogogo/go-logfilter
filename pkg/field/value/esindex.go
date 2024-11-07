@@ -146,7 +146,7 @@ func (r *IndexRender) Render(event map[string]interface{}) interface{} {
 		} else {
 			res, ok := v.(string)
 			if !ok {
-				log.Error().Msgf("esIndex render asset failed, got: %T  %#v", v, v)
+				log.Warn().Msgf("esIndex render asset failed, got: %T  %#v", v, v)
 				fields[i] = f.raw
 			} else {
 				fields[i] = res
