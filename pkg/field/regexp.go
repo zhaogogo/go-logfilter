@@ -9,5 +9,5 @@ var (
 	matchESIndex = regexp.MustCompile(`%{.*?}`) //%{+YYYY.MM.dd}
 	jsonPath     = regexp.MustCompile(`^\$\.`)
 
-	FailedTagKey = "failed_tag"
+	FailedTagKey = "gologfilter_failed_tag"
 )

@@ -6,16 +6,16 @@ import (
 	"strings"
 )
 
-func NewCondition(c string) Condition {
-	original_c := c
+func NewCondition(name string, template string) Condition {
+	original_c := template
 
-	c = strings.Trim(c, " ")
+	template = strings.Trim(template, " ")
 
-	if matched, _ := regexp.MatchString(`^{{.*}}$`, c); matched {
-		return NewTemplateCondition(c)
+	if matched, _ := regexp.MatchString(`^{{.*}}$`, template); matched {
+		return NewTemplateCondition(name, template)
 	}
 
-	if root, err := parseBoolTree(c); err != nil {
+	if root, err := parseBoolTree(template); err != nil {
 		log.Panic().Msgf("could not build Condition from `%s` : %s", original_c, err)
 		return nil
 	} else {

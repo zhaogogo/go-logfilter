@@ -1,36 +1,36 @@
 package filters
 
 import (
+	"fmt"
 	"github.com/zhaogogo/go-logfilter/core/topology"
 	"github.com/zhaogogo/go-logfilter/pkg/condition"
 	"github.com/zhaogogo/go-logfilter/pkg/field"
 )
 
-func NewFilter(filterType string, filter topology.Filter, cellConfig map[string]interface{}) (*Filter, error) {
-	var failedtag bool = false
+func NewFilter(name string, filter topology.Filter, cellConfig map[string]interface{}) (*Filter, error) {
+	var failedtag bool = true
 	failedtagAny, ok := cellConfig["failed_tag"]
 	if ok {
 		if failedtagBool, ok := failedtagAny.(bool); ok {
 			failedtag = failedtagBool
 		}
-
 	}
 	var overwrite bool = false
 	overwriteAny, ok := cellConfig["overwrite"]
 	if ok {
 		if overwriteBool, ok := overwriteAny.(bool); ok {
-			failedtag = overwriteBool
+			overwrite = overwriteBool
 		}
 	}
 	f := &Filter{
-		name:         filterType,
+		name:         name,
 		filter:       filter,
 		config:       cellConfig,
 		failed_tag:   failedtag,
-		addFields:    field.NewAddFields(cellConfig, failedtag),
 		overwrite:    overwrite,
-		deleteFields: field.NewFieldDeleter(cellConfig, filterType),
-		Conditioner:  condition.NewConditioner(cellConfig),
+		addFields:    field.NewAddFields(name, cellConfig),
+		deleteFields: field.NewFieldDeleter(cellConfig, name),
+		Conditioner:  condition.NewConditioner(name, cellConfig),
 	}
 	return f, nil
 }
@@ -52,11 +52,11 @@ func (f *Filter) Process(event map[string]interface{}) map[string]interface{} {
 	if f.Conditioner.Pass(event) {
 		event, err = f.filter.Filter(event)
 		if err != nil && f.failed_tag {
-			event = field.SetFailedTags(event, field.FailedTagKey, err.Error())
+			event = field.SetFailedTags(event, field.FailedTagKey, fmt.Sprintf("%s-%s", f.name, err.Error()))
 		}
 		if err == nil {
-			for _, fs := range f.addFields {
-				for fieldsetter, valuerender := range fs {
+			for _, fv := range f.addFields {
+				for fieldsetter, valuerender := range fv {
 					event = fieldsetter.SetField(event, valuerender.Render(event), f.overwrite)
 				}
 			}

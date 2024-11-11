@@ -9,28 +9,20 @@ import (
 	"github.com/zhaogogo/go-logfilter/pkg/metrics"
 )
 
-func NewInputer(inputType string, input topology.Input, cellConfig map[string]interface{}, process topology.Process) (*Inputer, error) {
-	var failedtag bool = false
-	failedtagAny, ok := cellConfig["failed_tag"]
-	if ok {
-		if failedtagBool, ok := failedtagAny.(bool); ok {
-			failedtag = failedtagBool
-		}
-
-	}
+func NewInputer(name string, input topology.Input, cellConfig map[string]interface{}, process topology.Process) (*Inputer, error) {
 	var overwrite bool = false
 	overwriteAny, ok := cellConfig["overwrite"]
 	if ok {
 		if overwriteBool, ok := overwriteAny.(bool); ok {
-			failedtag = overwriteBool
+			overwrite = overwriteBool
 		}
 	}
 	i := &Inputer{
+		name:         name,
 		input:        input,
-		name:         inputType,
 		config:       cellConfig,
 		shutdownChan: make(chan struct{}, 1),
-		addFields:    field.NewAddFields(cellConfig, failedtag),
+		addFields:    field.NewAddFields(name, cellConfig),
 		overwrite:    overwrite,
 	}
 

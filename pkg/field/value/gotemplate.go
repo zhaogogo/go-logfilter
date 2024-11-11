@@ -45,9 +45,21 @@ func init() {
 	funcMap["hasprefix"] = strings.HasPrefix
 	funcMap["hassuffix"] = strings.HasSuffix
 	funcMap["replace"] = strings.Replace
-
-	funcMap["timeFormat"] = func(t time.Time, format string) string {
-		return t.Format(format)
+	funcMap["timeFormat"] = func(t interface{}, srcFormat string, format string) (string, error) {
+		switch t.(type) {
+		case time.Time:
+			tt := t.(time.Time)
+			return tt.Format(format), nil
+		case string:
+			t, err := time.Parse(srcFormat, t.(string))
+			if err != nil {
+				log.Err(err).Msgf("parse time failed")
+				return "", err
+			}
+			return t.Format(format), nil
+		default:
+			return "", errors.New("go template 不支持的输入类型")
+		}
 	}
 
 	funcMap["now"] = func() int64 { return time.Now().UnixNano() / 1000000 }
@@ -137,7 +149,6 @@ func init() {
 func (r *TemplateValueRender) Render(event map[string]interface{}) interface{} {
 	b := bytes.NewBuffer(nil)
 	if err := r.tmpl.Execute(b, event); err != nil {
-		log.Warn().Err(err).Msgf("go template exec failed")
 		return nil
 	}
 	res := b.String()

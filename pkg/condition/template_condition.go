@@ -4,9 +4,10 @@ import "github.com/zhaogogo/go-logfilter/pkg/field"
 
 var _ Condition = &TemplateCondition{}
 
-func NewTemplateCondition(c string) *TemplateCondition {
+func NewTemplateCondition(name string, template string) *TemplateCondition {
+	failedTag := false
 	return &TemplateCondition{
-		ifCondition: field.GetValueRender(c, true),
+		ifCondition: field.GetValueRender(name, template, &failedTag),
 		ifResult:    "y",
 	}
 }

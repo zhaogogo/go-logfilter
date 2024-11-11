@@ -9,27 +9,27 @@ import (
 	"github.com/zhaogogo/go-logfilter/pkg/metrics"
 )
 
-func NewOutputer(outputType string, output topology.Output, cellConfig map[string]interface{}) (*Outputer, error) {
-	var failedtag bool = false
-	failedtagAny, ok := cellConfig["failed_tag"]
-	if ok {
-		if failedtagBool, ok := failedtagAny.(bool); ok {
-			failedtag = failedtagBool
-		}
-	}
+func NewOutputer(name string, output topology.Output, cellConfig map[string]interface{}) (*Outputer, error) {
+	//var failedtag bool = false
+	//failedtagAny, ok := cellConfig["failed_tag"]
+	//if ok {
+	//	if failedtagBool, ok := failedtagAny.(bool); ok {
+	//		failedtag = failedtagBool
+	//	}
+	//}
 	var overwrite bool = false
 	overwriteAny, ok := cellConfig["overwrite"]
 	if ok {
 		if overwriteBool, ok := overwriteAny.(bool); ok {
-			failedtag = overwriteBool
+			overwrite = overwriteBool
 		}
 	}
 	o := &Outputer{
 		output:      output,
-		name:        outputType,
+		name:        name,
 		config:      cellConfig,
-		Conditioner: condition.NewConditioner(cellConfig),
-		addFields:   field.NewAddFields(cellConfig, failedtag),
+		Conditioner: condition.NewConditioner(name, cellConfig),
+		addFields:   field.NewAddFields(name, cellConfig),
 		overwrite:   overwrite,
 	}
 	p, err := metrics.NewPrometheusCounter(cellConfig)

@@ -5,22 +5,23 @@ inputs:
         subsystem: ""
         name: "logfilter_stdin"
       add_fields:
-        # key添加
-        - "[x1][x2]": [1,2,3]               # 多级添加,value为interface支持golang多种数据类型
-          "a_key": "100"                # 字面量添加
-#        # value
-        - "jsonpath_test1": "$.message"
-        - "jsonpath_test2": "$.messagexxx"   # 如果jsonpath返回值为空，不添加value
-        - "[][]test1": "[x1][x2]"
-        - "[][]test2": "[a1][b1]"           # 如果[a1][b1]返回值为空，不添加value
-        - "[c1][c2]": "[a2][b2]"
-        - "go_template1": "{{ timeFormat .timestamp }}"   # 使用自定义函数
-        - "go_template2": "{{ timeFormat .timestamp \"2006-01-02\"}}"   # 使用自定义函数
-        - "es_key": "aa%{x1}{x2}-%{+2006.01.02}"
-      overwrite: true  # add_fields 是否覆盖
-      failed_tag: true
+        kv:
+          # key添加
+#          - "[x1][x2]": [1,2,3]               # 多级添加,value为interface支持golang多种数据类型
+#            "a_key": "100"                # 字面量添加
+  #        # value
+#          - "jsonpath_test1": "$.message"
+#          - "jsonpath_test2": "$.messagexxx"   # 如果jsonpath返回值为空，不添加value
+#          - "[][]test1": "[x1][x2]"
+#          - "[][]test2": "[a1][b1]"           # 如果[a1][b1]返回值为空，不添加value
+#          - "[c1][c2]": "[a2][b2]"
+#          - "go_template1": "{{ timeFormat .timestamp }}"   # 使用自定义函数
+#          - "go_template2": "{{ timeFormat .timestamp \"2006-01-02\"}}"   # 使用自定义函数
+#          - "es_key": "aa%{x1}{x2}-%{+2006.01.02}"
+        overwrite: true  # add_fields 是否覆盖
+        failed_tag: false
       codec: json
-      timestamp: timestamp  # timestamp_key值
+      timestamp: "timestamp"  # timestamp_key值
 filters:
 #  - hello:
 #      echo: ["echo", 9]
@@ -64,17 +65,25 @@ filters:
         - hello:
             echo: ["filter_filter_echo", {"abc":123}]
             add_fields:
+              kv:
               - "[abc123][def123]": 123
         - grok:
-            delete_fields: [ 'message' ]
+#            delete_fields: [ 'message' ]
             match:
               - '^(?P<logtime>\S+) (?P<name>\w+) (?P<status>\d+)$'
               - '^(?P<logtime>\S+) (?P<status>\d+) (?P<loglevel>\w+)$'
-              - '(?m)^(?P<first>\w+) (?P<last>\w+) (?<xx>.*)$'
+              - '(?m)^(?P<first>\w+) (?P<message>\w+)$'
             ignore_blank: true
             src: message
-            overwrite: false
-      failed_tag: true
+            target: ""
+#            overwrite: true
+            add_fields:
+              kv:
+                - "timestamp": "{{ timeFormat .timestamp \"2006-01-02T15:04:05.000 -0700\" \"2006-01-02 15:04:05.000\"}}"
+#              overwrite: true
+              failed_tag: true
+      failed_tag: false
+      overwrite: true
 #      if:
 #      - EQ(message, "a a")
 

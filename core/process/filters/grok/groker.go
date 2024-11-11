@@ -44,11 +44,15 @@ func New(c map[string]any) topology.Filter {
 	gf := &GrokFilter{
 		config:    c,
 		groks:     groks,
-		overwrite: true,
+		overwrite: false,
 		target:    "",
 	}
+	var valueRenderOverwrite *bool = nil
 	if overwrite, ok := c["overwrite"]; ok {
-		gf.overwrite = overwrite.(bool)
+		if overwrite, ok := overwrite.(bool); ok {
+			gf.overwrite = overwrite
+			valueRenderOverwrite = &overwrite
+		}
 	}
 
 	if srcValue, ok := c["src"]; ok {
@@ -56,7 +60,7 @@ func New(c map[string]any) topology.Filter {
 	} else {
 		gf.src = "message"
 	}
-	gf.vr = field.GetValueRender2(gf.src, gf.overwrite)
+	gf.vr = field.GetValueRender2("gork", gf.src, valueRenderOverwrite)
 
 	if target, ok := c["target"]; ok {
 		gf.target = target.(string)
@@ -68,6 +72,7 @@ func New(c map[string]any) topology.Filter {
 func (g *GrokFilter) Filter(event map[string]interface{}) (map[string]interface{}, error) {
 	input := g.vr.Render(event)
 	if input == nil {
+		log.Error().Msgf("grok filter plugin field render value failed, event=%#v", event)
 		return event, errors.New("grok filter plugin field render value failed")
 	}
 	i, ok := input.(string)
@@ -80,7 +85,6 @@ func (g *GrokFilter) Filter(event map[string]interface{}) (map[string]interface{
 			continue
 		}
 		if g.target == "" {
-
 			if g.overwrite {
 				for fie, val := range rst {
 					event[fie] = val
@@ -110,5 +114,5 @@ func (g *GrokFilter) Filter(event map[string]interface{}) (map[string]interface{
 		}
 		return event, nil
 	}
-	return event, errors.New("grokerFilter match not patterns")
+	return event, errors.New("grokerFilter match all not patterns")
 }

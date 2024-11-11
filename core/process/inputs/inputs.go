@@ -18,15 +18,15 @@ func NewInputs(inputsConf []any, process topology.Process) (inputs *Inputs, err 
 		c := inputC.(map[string]interface{})
 
 		for inputType, inputConfigI := range c {
-			log.Info().Msgf("input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
+			log.Info().Msgf("input-%v[%d] config:[%T] %v", inputType, inputIdx, inputConfigI, inputConfigI)
 			inputConfig := inputConfigI.(map[string]interface{})
 			input, err = GetInput(inputType, inputConfig)
 			if err != nil {
-				return nil, errors.Wrapf(err, "input插件不可用, input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
+				return nil, errors.Wrapf(err, "input插件不可用, input-%v[%d] type: %v config:[%T] %v", inputType, inputIdx, inputConfigI, inputConfigI)
 			}
-			inputer, err := NewInputer(fmt.Sprintf("%s[%v]", inputType, inputIdx), input, inputConfig, process)
+			inputer, err := NewInputer(fmt.Sprintf("input-%s[%v]", inputType, inputIdx), input, inputConfig, process)
 			if err != nil {
-				return nil, errors.Wrapf(err, "input创建失败 input[%d] type: %v config:[%T] %v", inputIdx, inputType, inputConfigI, inputConfigI)
+				return nil, errors.Wrapf(err, "input创建失败 input-%v[%d] config:[%T] %v", inputType, inputIdx, inputConfigI, inputConfigI)
 			}
 			inputs.inputs = append(inputs.inputs, inputer)
 		}

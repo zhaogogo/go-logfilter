@@ -23,7 +23,7 @@ func (jd *Jsoner) Decode(value []byte) map[string]interface{} {
 	err := d.Decode(&rst)
 	if err != nil || d.More() {
 		return map[string]interface{}{
-			jd.TimestampKey: time.Now(),
+			jd.TimestampKey: time.Now().Format("2006-01-02T15:04:05.000 -0700"),
 			"message":       string(value),
 		}
 	}

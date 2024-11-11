@@ -37,7 +37,8 @@ func New(config map[string]interface{}) topology.Filter {
 	if fieldsValue, ok := config["fields"]; ok {
 		for f, vI := range fieldsValue.(map[string]interface{}) {
 			v := vI.(map[string]interface{})
-			fieldSetter := field.NewFieldSetter(f)
+			overwrite := false
+			fieldSetter := field.NewFieldSetter("convert", f, &overwrite)
 			if fieldSetter == nil {
 				log.Fatal().Msgf("could build field setter from %#v", f)
 			}
@@ -71,7 +72,7 @@ func New(config map[string]interface{}) topology.Filter {
 
 			plugin.fields[fieldSetter] = ConveterAndRender{
 				converter:    converter,
-				valueRender:  field.GetValueRender2(f, false),
+				valueRender:  field.GetValueRender2("convert", f, true),
 				removeIfFail: remove_if_fail,
 				settoIfFail:  setto_if_fail,
 				settoIfNil:   setto_if_nil,

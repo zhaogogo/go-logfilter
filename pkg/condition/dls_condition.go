@@ -8,6 +8,7 @@ import (
 )
 
 type OPNode struct {
+	//name      string
 	op        int
 	left      *OPNode
 	right     *OPNode
